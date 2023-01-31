@@ -1,4 +1,4 @@
-package ru.gbzlat.models
+package ru.gbzlat.database.models
 
 import kotlinx.serialization.Serializable
 
