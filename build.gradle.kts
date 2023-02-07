@@ -3,6 +3,7 @@ val kotlin_version: String by project
 val logback_version: String by project
 
 plugins {
+    application
     kotlin("jvm") version "1.7.22"
     id("io.ktor.plugin") version "2.2.1"
     kotlin("plugin.serialization") version "1.7.20"
@@ -30,6 +31,7 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-server-auth:$ktor_version")
     implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
+    implementation("io.ktor:ktor-server-cors:$ktor_version")
 
     implementation("com.google.code.gson:gson:2.10.1")
 

@@ -13,7 +13,7 @@ import org.ktorm.schema.Table
 import ru.gbzlat.database.models.users
 
 class DatabaseManager {
-    private val hostname = "10.9.8.48"
+    private val hostname = "127.0.0.1"
     private val databaseName = "service_desk"
     private val username = "artem"
     private val password = "bujhmytcby123"
@@ -21,7 +21,7 @@ class DatabaseManager {
     val database: Database
 
     init {
-        val jdbcUrl = "jdbc:mysql://$hostname:3306/$databaseName?user=$username&password=$password&useSSL=false"
+        val jdbcUrl = "jdbc:mysql://$hostname:3306/$databaseName?user=$username&password=$password&allowPublicKeyRetrieval=true&useSSL=false"
         database = Database.connect(jdbcUrl)
     }
 

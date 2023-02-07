@@ -1,39 +1,40 @@
 package ru.gbzlat.database.models
 
+import org.ktorm.dsl.QueryRowSet
 import org.ktorm.entity.Entity
-import org.ktorm.schema.Table
-import org.ktorm.schema.int
-import org.ktorm.schema.varchar
+import org.ktorm.entity.sequenceOf
+import org.ktorm.schema.*
+import ru.gbzlat.database.DatabaseManager
+import java.time.LocalDateTime
 
 data class Ticket (
     val id: Int,
-    val name: String,
-    val login: String,
-    val password: String,
-    val roleId: Int,
-    val divisionId: Int,
-    val subdivisionId: Int
+    val userId: Int,
+    val text: String,
+    val createDate: LocalDateTime,
+    val closeDate: LocalDateTime,
+    val priorityId: Int,
+    val statusId: Int,
 )
 
-/*
-object TicketTable: Table<UserEntity>("Users"){
-    val id = int("id").primaryKey().bindTo { it.id }
-    val name = varchar("name").bindTo { it.name }
-    val login = varchar("login").bindTo { it.login }
-    val password = varchar("password").bindTo { it.password }
-    val roleId = int("role_id").bindTo { it.roleId }
-    val divisionId = int("division_id").bindTo { it.divisionId }
-    val subdivisionId = int("subdivision_id").bindTo { it.subdivisionId }
+object Tickets: BaseTable<Ticket>("Ticket") {
+    val id = int("id").primaryKey()
+    val userId = int("user_id")
+    val text = varchar("text")
+    val createDate = datetime("create_date")
+    val closeDate = datetime("create_date")
+    val priorityId = int("priority_id")
+    val statusId = int("status_id")
+
+    override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean)= Ticket(
+        id = row[id] ?: 0,
+        userId = row[userId] ?: 0,
+        text = row[text].orEmpty(),
+        createDate = row[createDate]?: LocalDateTime.now(),
+        closeDate = row[closeDate]?: LocalDateTime.now(),
+        priorityId = row[priorityId] ?: 0,
+        statusId = row[statusId] ?: 0,
+    )
 }
 
-interface TicketEntity: Entity<UserEntity> {
-    companion object : Entity.Factory<UserEntity>()
-
-    val id: Int
-    val name: String
-    val login: String
-    val password: String
-    val roleId: Int
-    val divisionId: Int
-    val subdivisionId: Int
-}*/
+val DatabaseManager.tickets get() = database.sequenceOf(Tickets)
