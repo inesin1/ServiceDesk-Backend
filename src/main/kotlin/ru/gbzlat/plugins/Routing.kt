@@ -6,11 +6,11 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.request.*
 import io.ktor.util.*
+import org.ktorm.dsl.insert
 import org.ktorm.entity.toList
-import ru.gbzlat.database.models.Auth
-import ru.gbzlat.database.models.tickets
-import ru.gbzlat.database.models.users
+import ru.gbzlat.database.models.*
 import ru.gbzlat.db
+import java.time.LocalDateTime
 
 fun Application.configureRouting() {
     routing {
@@ -74,7 +74,15 @@ fun Route.ticketsRoute() {
                     }))
         }
         post {
-            // TODO post request tickets
+            val ticket = call.receive<TicketPojo>()
+            db.database.insert(Tickets) {
+                set(it.userId, ticket.userId)
+                set(it.text, ticket.text)
+                set(it.createDate, LocalDateTime.now())
+                set(it.closeDate, null)
+                set(it.priorityId, ticket.priorityId)
+                set(it.statusId, ticket.statusId)
+            }
         }
     }
 }
