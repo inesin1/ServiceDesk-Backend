@@ -20,23 +20,24 @@ body{
 }
 .header{
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     width: 100vw;
-    height: 50px;
+    height: 60px;
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 9999;
     background: #111;
+    text-align: center;
 }
 .header-title{
-    /* text-align: center; */
     font-family: 'Bicubik';
     font-size: 30pt;
     user-select: none;
 }
-form{
+
+/* ---SIGNIN--- */
+.auth-form{
     width: 100vw;
     height: 100vh;
     display: flex;
@@ -44,7 +45,7 @@ form{
     justify-content: center;
     align-items: center;
 }
-input{
+input{  /* .auth-input{  */
     margin: 5px;
     padding: 5px 10px;
     border-radius: 5px;
@@ -52,8 +53,17 @@ input{
     background: #222;
     color: #fff;
 }
-input:focus{
+.auth-input:focus{
     background: #333;
+}
+.auth-error{
+    display: none;
+    border: 1px solid red;
+    border-radius: 5px;
+    padding: 3px;
+    margin-top: 5px;
+    color: red;
+    font-size: medium;
 }
 button{
     margin: 10px;
@@ -68,36 +78,123 @@ button{
 button:hover{
     background: #444;
 }
+/* -------------------- */
 
-
-
-
-
-
-
-/* .navigation ul{
+/* ------SIDEBAR------- */
+.menu-btn{
+    display: block;
+    width: 50px;
+    height: 50px;
+    background-color: #fff;
+    border-radius: 50%;
+    position: relative;
+}
+.menu-btn span,
+.menu-btn span::before,
+.menu-btn span::after{
+    position: absolute;
+    top: 50%; margin-top: -1px;
+    left: 50%; margin-left: -10px;
+    width: 20px;
+    height: 2px;
+    background-color: #222;
+}
+.menu-btn span::before,
+.menu-btn span::after{
+    content: '';
+    transition: 0.2s;
+}
+.menu-btn span::before{
+    transform: translateY(5px);
+}
+.menu-btn span::after{
+    transform: translateY(-5px);
+}
+.menu-btn_active span:before{
+    transform: rotate(35deg);
+    width: 10px;
+    transform-origin: left bottom;
+}
+.menu-btn_active span:after{
+    transform: rotate(-35deg);
+    width: 10px;
+    transform-origin: left top;
+}
+.sidebar-menu{
     display: flex;
-    justify-content: flex-end;
+    position: fixed;
+    right: 0;
+    overflow: hidden;
+    border-top-right-radius: 50px;
+    border-bottom-right-radius: 50px;
+}
+.menu-function{
+    background-color: #fff;
+    height: 50px;
+    line-height: 50px;
+    padding-left: 20px;
+    padding-right: 40px;
+    border-top-left-radius: 50px;
+    border-bottom-left-radius: 50px;
+    margin-right: -25px;
+}
+.menu-function_link{
+    display: inline-block;
+    text-decoration: none;
+    color: #222;
+    margin-right: 10px;
+}
+.menu-function{
+    transition: 0.2s;
+    transform-origin: right center;
+    transform: translateX(100%);
+    opacity: 0;
+}
+.menu-function_active{
+    transform: translateX(0%);
+    opacity: 1;
+}
+/* -------------------- */
 
-    list-style: none;
+/* -----TICKET FORM---- */
+.ticket-form{
+    display: flex;
+    flex-direction: column;
+    /* justify-content: center; */
 }
-.content{
-    width: 1200px;
-    text-align: center;
-}
-.content ul{
-    list-style: none;
-}
-.error{
-    display: none;
-    border: 1px solid red;
+.ticket-content{
+    font-size: 14pt;
+    width: 700px;
+    height: 300px;
+    overflow: auto;
+    margin: 5px;
+    padding: 5px 10px;
     border-radius: 5px;
-    padding: 3px;
-    margin-top: 5px;
-    color: red;
-    font-size: medium;
+    border: 1px solid #fff;
+    background: #222;
+    color: #fff;
+    resize: none;
 }
-.posts{
+.ticket-bottom{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.ticket-priority{
+    width: 170px;
+    height: 31px;
+    margin: 5px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid #fff;
+    background: #222;
+    color: #fff;
+}
+/* -------------------- */
+
+
+
+/* .posts{
     margin: 5px;
     width: 100%;
     border: 1px solid #fff;
