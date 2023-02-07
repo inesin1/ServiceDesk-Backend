@@ -14,6 +14,7 @@ fun main() {
 }
 
 fun Application.module() {
+    configureCors()
     configureRouting()
     configureSerialization()
     configureAuthentication()
