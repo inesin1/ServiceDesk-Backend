@@ -5,5 +5,9 @@ $(document).ready(function(){
         $(this).toggleClass('menu-btn_active');
         $('.menu-function').toggleClass('menu-function_active');
     });
-    
+  
+    $('.get-users').on('click', function(){
+        authorization();
+        alert("Good");
+    })
 })
