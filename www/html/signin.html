@@ -10,20 +10,24 @@
 </head>
 <body>
     <div class="header">
+        <button id = "test-button">test</button>
         <div class="header-title">Service Desk</div>
     </div>
 
-    <form class="auth-form" method="post">
-        <input class="auth-input" type="text" name="username" id="" placeholder="Введите логин">
-        <input class="auth-input" type="password" name="password" id="" placeholder="Введите пароль">
+
+
+    <form class="auth-form">
+        <input class="auth-input" type="text" name="username" placeholder="Введите логин">
+        <input class="auth-input" type="password" name="password" placeholder="Введите пароль">
         <div class="auth-error">
             <span>Неверный ввод логина или пароля!</span>
         </div>
-        <button id="auth__submit" type="submit">Войти</button>
+        <button id="auth__submit">Войти</button>
     </form>
 
     <script src="../js/jquery-3.6.0.min.js"></script>
     <script src="../js/requests.js"></script>
+    <script src="../js/authPage_script.js"></script>
     <!-- <script src="../js/script.js"></script> -->
 </body>
 </html>

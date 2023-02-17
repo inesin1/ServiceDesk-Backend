@@ -15,6 +15,7 @@ data class User (
     val name: String,
     val login: String,
     val password: String,
+    val token: String,
     val roleId: Int,
     val divisionId: Int,
     val subdivisionId: Int
@@ -25,6 +26,7 @@ object Users: BaseTable<User>("Users") {
     val name = varchar("name")
     val login = varchar("login")
     val password = varchar("password")
+    val token = varchar("token")
     val roleId = int("role_id")
     val divisionId = int("division_id")
     val subdivisionId = int("subdivision_id")
@@ -34,6 +36,7 @@ object Users: BaseTable<User>("Users") {
         name = row[name].orEmpty(),
         login = row[login].orEmpty(),
         password = row[password].orEmpty(),
+        token = row[token].orEmpty(),
         roleId = row[roleId] ?: 0,
         divisionId = row[divisionId] ?: 0,
         subdivisionId = row[subdivisionId] ?: 0,

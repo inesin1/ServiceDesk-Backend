@@ -12,7 +12,7 @@ plugins {
 group = "ru.gbzlat"
 version = "0.0.1"
 application {
-    mainClass.set("ru.gbzlat.ApplicationKt")
+    mainClass.set("io.ktor.server.netty.EngineMain")
 
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
@@ -23,24 +23,29 @@ repositories {
 }
 
 dependencies {
+    // core
     implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-netty-jvm:$ktor_version")
     implementation("ch.qos.logback:logback-classic:$logback_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
+
+    // auth
     implementation("io.ktor:ktor-server-auth:$ktor_version")
     implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
+    implementation("io.ktor:ktor-server-sessions:$ktor_version")
     implementation("io.ktor:ktor-server-cors:$ktor_version")
 
+    // json
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktor_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
 
-    //database
+    // database
     implementation("org.ktorm:ktorm-core:3.6.0")
     implementation("org.ktorm:ktorm-support-mysql:3.6.0")
     implementation("mysql:mysql-connector-java:8.0.32")
 
-    //test
+    // test
     testImplementation("io.ktor:ktor-server-test-host:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlin_version")
 }
