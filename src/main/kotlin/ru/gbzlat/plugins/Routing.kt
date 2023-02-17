@@ -1,11 +1,11 @@
 package ru.gbzlat.plugins
 
-import io.ktor.server.routing.*
 import io.ktor.http.*
+import io.ktor.server.routing.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.request.*
-import io.ktor.util.*
+import io.ktor.server.sessions.*
 import org.ktorm.dsl.insert
 import org.ktorm.entity.toList
 import ru.gbzlat.database.models.*
@@ -36,10 +36,16 @@ fun Route.authenticationRoute() {
                 it.login == auth.login && it.password == auth.password
             }
 
-        if (user != null)
-            call.respond(" {\"message\": \"You're successfully authenticated!\"} ")
+        //call.response.header(HttpHeaders.AccessControlAllowOrigin, "*")
+
+        if (user != null) {
+            val token = Authentication.instance.createAccessToken(user.id)
+            //call.sessions.set(AuthorizationHeader(token))
+            //call.response.cookies.append("token", token)
+            call.respond("{\"token\": \"${token}\"}")
+        }
         else
-            call.respond(" {\"message\": \"Authentication failed!\"} ")
+            call.respond(" {\"token\": \"null\"} ")
     }
 }
 

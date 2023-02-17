@@ -8,13 +8,16 @@ import ru.gbzlat.plugins.*
 
  val db = DatabaseManager()
 
-fun main() {
-    embeddedServer(Netty, port = 7171, host = "0.0.0.0", module = Application::module)
-        .start(wait = true)
-}
+/*fun main() {
+    *//*embeddedServer(Netty, port = 7171, host = "0.0.0.0", module = Application::module)
+        .start(wait = true)*//*
+
+}*/
+fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
     configureCors()
+    configureSessions()
     configureRouting()
     configureSerialization()
     configureAuthentication()
