@@ -27,6 +27,7 @@ $(document).ready(function(){
                 .then((response) => response.json())
                 .then((data) => sessionStorage.setItem('token', data.token));
             console.log(sessionStorage.getItem('token'))
+            window.location.href = "mytickets.html";
         } catch (err) {
             console.log("Ошибка авторизации");
         }
