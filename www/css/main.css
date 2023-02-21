@@ -1,13 +1,19 @@
+@font-face {
+    font-family: 'Bicubik';
+    src: url(../src/fonts/Bicubik.OTF);
+}
+@font-face {
+    font-family: 'Roboto';
+    src: url(../src/fonts/roboto/Roboto-Regular.ttf);
+    font-weight: 400;
+}
 *{
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
-@font-face {
-    font-family: 'Bicubik';
-    src: url(../src/fonts/Bicubik.OTF);
-}
 body{
+    font-family: 'Roboto';
     background: #222;
     color: #fff;
 }
@@ -160,7 +166,6 @@ button:hover{
 .ticket-form{
     display: flex;
     flex-direction: column;
-    /* justify-content: center; */
 }
 .ticket-content{
     font-size: 14pt;
@@ -191,6 +196,99 @@ button:hover{
     color: #fff;
 }
 /* -------------------- */
+
+/* ------MyTicket------ */
+.mytickets{
+    width: 770px;
+}
+.mytickets li{
+    list-style-type: none;
+}
+.ticket{
+    display: grid;
+    border-radius: 5px;
+    border: 1px solid #fff;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+}
+.ticket-header{
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    padding: 5px;
+}
+.ticket-number a{
+    color: #fff;
+}
+.ticket-status{
+    display: grid;
+    justify-items: end;
+}
+.ticket-main{
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    padding: 5px;
+}
+.ticket-txt{
+    background-color: #222;
+    color: #fff;
+    width: 570px;
+    height: 50px;
+    resize: none;
+}
+.ticket-prt{
+    display: grid;
+    justify-items: center;
+}
+.ticket-solve{
+    display: grid;
+    grid-template-columns: 1.3fr 1.3fr 1.3fr;
+    padding: 5px;
+}
+
+.status-inProgress{
+    display: block;
+    color: #EBE752;
+}
+.status-end{
+    display: block;
+    color: #5BEB52;
+}
+
+.ticket-txt::-webkit-scrollbar{
+    width: 5px;
+}
+.ticket-txt::-webkit-scrollbar-track{
+    background-color: #fff;
+}
+.ticket-txt::-webkit-scrollbar-thumb{
+    background-color: #222;
+    width: 3px;
+    border: 1px solid #fff;
+}
+/* -------------------- */
+
+/* -------Ticket------- */
+.ticket-info{
+
+}
+.ticket-dialog{
+    width: 400px;
+    height: 700px;
+    border: 1px solid #fff;
+    border-radius: 10px;
+}
+.dialog-history{
+
+}
+.dialog-newmsg{
+    
+}
+
+
+
+
+
+
 
 
 

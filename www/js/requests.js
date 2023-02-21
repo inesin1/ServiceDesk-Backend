@@ -32,23 +32,4 @@ $(document).ready(function(){
         }
     }
 
-/*    function authorization() {
-        fetch('http://10.9.8.100:7171/api/users', {
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            method: "GET"
-        })
-        .then(response => response.text())
-        .then(data => {
-            console.log('Success: ', data);
-            alert(data);
-        })
-        .catch((error) => {
-            console.log('Error: ', error);
-            alert("Error");
-        });
-    }*/
-
 });
