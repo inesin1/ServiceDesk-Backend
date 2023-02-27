@@ -31,24 +31,35 @@
     </div>
 
     <div class="wrapper">
-        <div class="ticket-info">
-            <!-- Номер заявки -->
-            <!-- Статус -->
-            <!-- Приоритет -->
-            <!-- Текст заявки -->
-            <!-- Исполнитель и даты -->
-        </div>
-
-        <div class="ticket-dialog">
-            <div class="dialog-history">
-                <ul>
-                    <li></li>
-                </ul>
+        <div class="ticket-wrap">
+            <div class="ticket-info">
+                <!-- Номер заявки -->
+                <!-- Статус -->
+                <!-- Приоритет -->
+                <!-- Текст заявки -->
+                <!-- Исполнитель и даты -->
             </div>
-            <div class="dialog-newmsg">
-                <div role="textbox" aria-multiline="true"></div>
+    
+            <div class="ticket-dialog">
+                <div class="dialog-history">
+                    <!-- <ul>
+                        <li></li>
+                    </ul> -->
+                </div>
+                <div class="dialog-newmsg">
+                    <div class="newmsg-txt" role="textbox" aria-multiline="true">
+                        <input type="text" name="message-txt" id="message-txt">
+                    </div>
+                    <div class="submit-msg">
+                        <!-- <input type="submit" value=">"> -->
+                        <a href="" class="submit-btn">
+                            <span></span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
+        
     </div>
 
     <script src="../js/jquery-3.6.0.min.js"></script>
