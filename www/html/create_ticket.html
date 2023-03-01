@@ -35,16 +35,17 @@
         <!-- Форма заявки -->
         <form class="ticket-form" action="" method="post">
             <div class="ticket-top">
-                <textarea class="ticket-content" name="ticket-txt" id="" placeholder="Описание проблемы"></textarea> <!-- текст заявки -->
+                <textarea class="ticket-content" name="ticket-txt" placeholder="Описание проблемы"></textarea> <!-- текст заявки -->
             </div>
             <div class="ticket-bottom">
-                <select class="ticket-priority" name="" id="">
-                    <option value="">Приоритет</option>
-                    <option value="">1 день</option>
-                    <option value="">2 дня</option>
-                    <option value="">В течение недели</option>
-                    <option value="">Срочно!</option>
-                </select> <!-- приоритет -->
+                <div class="ticket-priority">
+                    <p>Приоритет</p>
+                    <select class="ticket-priority_select">
+                        <option value="3">Высокий</option>
+                        <option value="1">Средний</option>
+                        <option value="2">Низкий</option>
+                    </select> <!-- приоритет -->
+                </div>
                 <button class="btn-send" type="submit">Отправить</button>
             </div>
             

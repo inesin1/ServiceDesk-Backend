@@ -38,7 +38,7 @@ async function postAuthenticate() {
     }
 }
 
-// Получение всех заявок
+// Получение всех тикетов
 async function getTickets() {
     try {
         return await fetch('http://94.24.237.230:7171/api/tickets', {
@@ -54,16 +54,21 @@ async function getTickets() {
         console.log("Ошибка: " + err);
     }
 }
-// Получение заявки по id
-async function getTicket(id) {
+// Отправка тикета
+async function postTicket(text, priorityId) {
     try {
-        return await fetch('http://94.24.237.230:7171/api/tickets/id', {
+        return await fetch('http://94.24.237.230:7171/api/tickets', {
             mode: 'cors',
             headers: {
                 'Accept': 'application/json',
+                'Content-Type': 'application/json',
                 'Authorization': 'bearer ' + sessionStorage.getItem('token')
             },
-            method: "GET"
+            method: "POST",
+            body: JSON.stringify({
+                text: text,
+                priorityId: priorityId
+            })
         })
             .then((response) => response.json())
     } catch (err) {

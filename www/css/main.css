@@ -186,7 +186,7 @@ button:hover{
     justify-content: center;
     align-items: center;
 }
-.ticket-priority{
+.ticket-priority_select{
     width: 170px;
     height: 31px;
     margin: 5px;

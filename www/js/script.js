@@ -8,6 +8,9 @@ $(document).ready(function(){
         $('.menu-function').toggleClass('menu-function_active');
     });
 
+    $('.logout_button').on('click', function () {
+
+    });
 });
 
 // Преобразовывает объект даты и времени в строку
