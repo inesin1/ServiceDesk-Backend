@@ -17,8 +17,7 @@ data class User (
     val password: String,
     val token: String,
     val roleId: Int,
-    val divisionId: Int,
-    val subdivisionId: Int
+    val divisionId: Int
 )
 
 object Users: BaseTable<User>("Users") {
@@ -29,7 +28,6 @@ object Users: BaseTable<User>("Users") {
     val token = varchar("token")
     val roleId = int("role_id")
     val divisionId = int("division_id")
-    val subdivisionId = int("subdivision_id")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean)= User(
         id = row[id] ?: 0,
@@ -38,8 +36,7 @@ object Users: BaseTable<User>("Users") {
         password = row[password].orEmpty(),
         token = row[token].orEmpty(),
         roleId = row[roleId] ?: 0,
-        divisionId = row[divisionId] ?: 0,
-        subdivisionId = row[subdivisionId] ?: 0,
+        divisionId = row[divisionId] ?: 0
     )
 }
 

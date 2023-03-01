@@ -18,7 +18,7 @@ fun main(args: Array<String>): Unit = EngineMain.main(args)
 fun Application.module() {
     configureCors()
     configureSessions()
+    configureAuthentication()
     configureRouting()
     configureSerialization()
-    configureAuthentication()
 }

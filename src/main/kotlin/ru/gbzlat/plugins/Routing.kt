@@ -1,8 +1,11 @@
 package ru.gbzlat.plugins
 
+import com.auth0.jwt.JWT
 import io.ktor.http.*
 import io.ktor.server.routing.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.response.*
 import io.ktor.server.request.*
 import io.ktor.server.sessions.*
@@ -22,8 +25,11 @@ fun Application.configureRouting() {
         // Api
         route("/api") {
             authenticationRoute()
-            usersRoute()
-            ticketsRoute()
+            authenticate ("auth-jwt") {
+                usersRoute()
+                ticketsRoute()
+                enumsRoute()
+            }
         }
     }
 }
@@ -70,7 +76,15 @@ fun Route.usersRoute() {
 fun Route.ticketsRoute() {
     route("/tickets") {
         get {
-            call.respond(gson.toJson(db.tickets.toList()))
+            val principal = call.principal<UserIdPrincipalForUser>()
+            val userId = principal!!.id
+            val userRoleId = db.users.toList().single{it.id == userId}.roleId
+
+            when (userRoleId) {
+                1 -> call.respond(gson.toJson(db.tickets.toList().filter { it.creatorId ==  userId}))
+                2 -> call.respond(gson.toJson(db.tickets.toList().filter { it.executorId ==  userId}))
+                3 -> call.respond(gson.toJson(db.tickets.toList()))
+            }
         }
         get ("/{id}") {
             call.respond(
@@ -82,13 +96,46 @@ fun Route.ticketsRoute() {
         post {
             val ticket = call.receive<TicketPojo>()
             db.database.insert(Tickets) {
-                set(it.userId, ticket.userId)
+                set(it.creatorId, ticket.creatorId)
+                set(it.executorId, ticket.executorId)
                 set(it.text, ticket.text)
                 set(it.createDate, LocalDateTime.now())
                 set(it.closeDate, null)
                 set(it.priorityId, ticket.priorityId)
                 set(it.statusId, ticket.statusId)
             }
+        }
+    }
+}
+
+fun Route.enumsRoute() {
+    route("/statuses"){
+        get {
+            call.respond(db.statuses.toList())
+        }
+        get("/{id}") {
+            call.respond(
+                gson.toJson(
+                    db.statuses.toList().singleOrNull {
+                        it.id == call.parameters["id"]?.toInt()
+                    }
+                )
+            )
+        }
+    }
+
+    route("/priorities"){
+        get {
+            call.respond(db.priorities.toList())
+        }
+        get("/{id}") {
+            call.respond(
+                gson.toJson(
+                    db.priorities.toList().singleOrNull {
+                        it.id == call.parameters["id"]?.toInt()
+                    }
+                )
+            )
         }
     }
 }

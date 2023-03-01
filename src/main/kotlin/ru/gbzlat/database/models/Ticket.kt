@@ -13,7 +13,8 @@ import java.time.LocalDateTime
 @Serializable
 data class Ticket (
     val id: Int,
-    val userId: Int,
+    val creatorId: Int,
+    val executorId: Int,
     val text: String,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createDate: LocalDateTime,
@@ -25,7 +26,8 @@ data class Ticket (
 
 object Tickets: BaseTable<Ticket>("Tickets") {
     val id = int("id").primaryKey()
-    val userId = int("user_id")
+    val creatorId = int("creator_id")
+    val executorId = int("executor_id")
     val text = varchar("text")
     val createDate = datetime("create_date")
     val closeDate = datetime("close_date")
@@ -34,10 +36,11 @@ object Tickets: BaseTable<Ticket>("Tickets") {
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean)= Ticket(
         id = row[id] ?: 0,
-        userId = row[userId] ?: 0,
+        creatorId = row[creatorId] ?: 0,
+        executorId = row[executorId] ?: 0,
         text = row[text].orEmpty(),
         createDate = row[createDate]?: LocalDateTime.now(),
-        closeDate = row[closeDate]?: LocalDateTime.now(),
+        closeDate = row[closeDate],
         priorityId = row[priorityId] ?: 0,
         statusId = row[statusId] ?: 0,
     )
