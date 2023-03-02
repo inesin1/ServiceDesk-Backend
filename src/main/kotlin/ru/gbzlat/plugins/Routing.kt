@@ -10,6 +10,7 @@ import io.ktor.server.response.*
 import io.ktor.server.request.*
 import io.ktor.server.sessions.*
 import org.ktorm.dsl.insert
+import org.ktorm.entity.single
 import org.ktorm.entity.toList
 import ru.gbzlat.database.models.*
 import ru.gbzlat.db
@@ -76,8 +77,7 @@ fun Route.usersRoute() {
 fun Route.ticketsRoute() {
     route("/tickets") {
         get {
-            val principal = call.principal<UserIdPrincipalForUser>()
-            val userId = principal!!.id
+            val userId = call.principal<UserIdPrincipalForUser>()!!.id
             val userRoleId = db.users.toList().single{it.id == userId}.roleId
 
             when (userRoleId) {
@@ -94,15 +94,26 @@ fun Route.ticketsRoute() {
                     }))
         }
         post {
-            val ticket = call.receive<TicketPojo>()
-            db.database.insert(Tickets) {
-                set(it.creatorId, ticket.creatorId)
-                set(it.executorId, ticket.executorId)
-                set(it.text, ticket.text)
-                set(it.createDate, LocalDateTime.now())
-                set(it.closeDate, null)
-                set(it.priorityId, ticket.priorityId)
-                set(it.statusId, ticket.statusId)
+            try {
+                val ticket = call.receive<TicketPojo>()
+
+                val userId = call.principal<UserIdPrincipalForUser>()!!.id
+                val userDivisionId = db.users.toList().single { it.id == userId }.divisionId
+                val executorId = db.divisions.toList().single { it.id == userDivisionId }.programmerId
+
+                db.database.insert(Tickets) {
+                    set(it.creatorId, userId)
+                    set(it.executorId, executorId)
+                    set(it.text, ticket.text)
+                    set(it.createDate, LocalDateTime.now())
+                    set(it.closeDate, null)
+                    set(it.priorityId, ticket.priorityId)
+                    set(it.statusId, 1)
+                }
+
+                call.respond(HttpStatusCode.OK);
+            } catch (e: Exception){
+                call.respond(HttpStatusCode.NotAcceptable)
             }
         }
     }
