@@ -29,6 +29,7 @@ fun Application.configureRouting() {
             authenticate ("auth-jwt") {
                 usersRoute()
                 ticketsRoute()
+                divisionsRoute()
                 enumsRoute()
             }
         }
@@ -68,6 +69,15 @@ fun Route.usersRoute() {
                         it.id == call.parameters["id"]?.toInt()
                     }))
         }
+        get ("/current") {
+            val userId = call.principal<UserIdPrincipalForUser>()!!.id
+
+            call.respond(
+                gson.toJson(
+                    db.users.toList().singleOrNull {
+                        it.id == userId
+                    }))
+        }
         post {
             // TODO post request users
         }
@@ -104,6 +114,7 @@ fun Route.ticketsRoute() {
                 db.database.insert(Tickets) {
                     set(it.creatorId, userId)
                     set(it.executorId, executorId)
+                    set(it.subject, ticket.subject)
                     set(it.text, ticket.text)
                     set(it.createDate, LocalDateTime.now())
                     set(it.closeDate, null)
@@ -143,6 +154,38 @@ fun Route.enumsRoute() {
             call.respond(
                 gson.toJson(
                     db.priorities.toList().singleOrNull {
+                        it.id == call.parameters["id"]?.toInt()
+                    }
+                )
+            )
+        }
+    }
+
+    route("/roles"){
+        get {
+            call.respond(db.roles.toList())
+        }
+        get("/{id}") {
+            call.respond(
+                gson.toJson(
+                    db.roles.toList().singleOrNull {
+                        it.id == call.parameters["id"]?.toInt()
+                    }
+                )
+            )
+        }
+    }
+}
+
+fun Route.divisionsRoute() {
+    route("/divisions"){
+        get {
+            call.respond(db.divisions.toList())
+        }
+        get("/{id}") {
+            call.respond(
+                gson.toJson(
+                    db.divisions.toList().singleOrNull {
                         it.id == call.parameters["id"]?.toInt()
                     }
                 )

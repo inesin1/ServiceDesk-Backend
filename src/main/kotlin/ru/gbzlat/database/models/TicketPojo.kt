@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TicketPojo(
-    val text: String,
+    val subject: String,
+    val text: String?,
     val priorityId: Int,
 )

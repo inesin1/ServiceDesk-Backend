@@ -18,6 +18,9 @@ function renderTickets(tickets) {
                             </div>
                         </div>
                         <div class="ticket-main">
+                            <div class="ticket-subject">
+                                <h3 class="ticket-subject">${ticket.subject}</h3>
+                            </div>
                             <div class="ticket-txt">
                                 <textarea disabled class="ticket-txt">${ticket.text}</textarea>
                             </div>
@@ -32,11 +35,11 @@ function renderTickets(tickets) {
                             <label for="ticket-executor">Исполнитель: 
                                 <span>${(await getUser(ticket.executorId)).name}</span>
                             </label>
-                            <label for="ticket-ds">Дата создания: 
+                            <label for="ticket-ds">Создан: 
                                 <span>${datetimeToString(ticket.createDate)}</span>
                             </label>
-                            <label for="ticket-de">Дата завершения: 
-                                <span>${ticket.closeDate != null? datetimeToString(ticket.closeDate) : 'Не завершено'}</span>
+                            <label for="ticket-de">Закрыт: 
+                                <span>${ticket.closeDate != null? datetimeToString(ticket.closeDate) : 'Не закрыт'}</span>
                             </label>
                         </div>
                     </div>`;

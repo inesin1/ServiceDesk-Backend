@@ -1,44 +1,46 @@
 'use strict'
 
-$(document).ready(function(){
+if
+(
+    sessionStorage.getItem('token') === 'null' ||
+    sessionStorage.getItem('token') == null
+)
+    window.location.href = "auth.html";
 
-    $('#auth__submit').on('click', (event) => {
-        event.preventDefault();
-        console.log("click");
-        postAuthenticate();
-    });
+$(document).ready(async function(){
+    $('#navbarDropdown').html((await getCurrentUser()).name)
 
-
-
+    getTickets().then(renderTickets);
 });
 
-// Аутентификация
-async function postAuthenticate() {
-    try {
-        await fetch('http://94.24.237.230:7171/api/auth', {
-            mode: 'cors',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            method: "POST",
-            body: JSON.stringify(
-                {
-                    login: $('input[name="username"]').val(),
-                    password: $('input[name="password"]').val()
-                }
-            )
-        })
-            .then((response) => response.json())
-            .then((data) => sessionStorage.setItem('token', data.token));
-        console.log(sessionStorage.getItem('token'))
-        window.location.href = "tickets.html";
-    } catch (err) {
-        console.log("Ошибка авторизации");
-    }
+function renderTickets(tickets) {
+    let table = $('.table > tbody');
+
+    tickets.forEach(async (ticket) => {
+        table.append(`
+            <tr onclick="openTicket(${ticket.id})">
+                <th scope="row">${ticket.id}</th>
+                <td>${ticket.subject}</td>
+                <td>${(await getUser(ticket.creatorId)).name}</td>
+                <td>${(await getUser(ticket.executorId)).name}</td>
+                <td>${datetimeToString(ticket.createDate)}</td>
+                <td>${ticket.closeDate != null? datetimeToString(ticket.closeDate) : 'Не закрыт'}</td>
+                <td>${(await getPriority(ticket.priorityId)).name}</td>
+                <td>${(await getStatus(ticket.statusId)).name}</td>
+            </tr>
+    `);
+    });
 }
 
-// Получение всех тикетов
+function openTicket(id) {
+    window.location.href = '../pages/ticket.html?id=' + id;
+}
+
+function logout() {
+    sessionStorage.removeItem('token');
+    window.location.href = '../pages/auth.html';
+}
+
 async function getTickets() {
     try {
         return await fetch('http://94.24.237.230:7171/api/tickets', {
@@ -54,21 +56,16 @@ async function getTickets() {
         console.log("Ошибка: " + err);
     }
 }
-// Отправка тикета
-async function postTicket(text, priorityId) {
+
+async function getCurrentUser() {
     try {
-        return await fetch('http://94.24.237.230:7171/api/tickets', {
+        return await fetch('http://94.24.237.230:7171/api/users/current', {
             mode: 'cors',
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json',
                 'Authorization': 'bearer ' + sessionStorage.getItem('token')
             },
-            method: "POST",
-            body: JSON.stringify({
-                text: text,
-                priorityId: priorityId
-            })
+            method: "GET"
         })
             .then((response) => response.json())
     } catch (err) {
@@ -124,5 +121,22 @@ async function getUser(id) {
             .then((response) => response.json())
     } catch (err) {
         console.log("Ошибка: " + err);
+    }
+}
+
+// Преобразовывает объект даты и времени в строку
+function datetimeToString(datetime) {
+    try {
+        return `${addNull(datetime.time.hour)}:${addNull(datetime.time.minute)} ${addNull(datetime.date.day)}.${addNull(datetime.date.month)}.${datetime.date.year}`;
+    } catch {
+        return 'Ошибка';
+    }
+
+    function addNull(num) {
+        if (num < 10) {
+            return `0${num}`;
+        } else {
+            return num;
+        }
     }
 }

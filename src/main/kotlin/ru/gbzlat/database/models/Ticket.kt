@@ -15,7 +15,8 @@ data class Ticket (
     val id: Int,
     val creatorId: Int,
     val executorId: Int,
-    val text: String,
+    val subject: String,
+    val text: String?,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createDate: LocalDateTime,
     @Serializable(with = LocalDateTimeSerializer::class)
@@ -28,6 +29,7 @@ object Tickets: BaseTable<Ticket>("Tickets") {
     val id = int("id").primaryKey()
     val creatorId = int("creator_id")
     val executorId = int("executor_id")
+    val subject = varchar("subject")
     val text = varchar("text")
     val createDate = datetime("create_date")
     val closeDate = datetime("close_date")
@@ -35,14 +37,15 @@ object Tickets: BaseTable<Ticket>("Tickets") {
     val statusId = int("status_id")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean)= Ticket(
-        id = row[id] ?: 0,
-        creatorId = row[creatorId] ?: 0,
-        executorId = row[executorId] ?: 0,
+        id = row[id]!!,
+        creatorId = row[creatorId]!!,
+        executorId = row[executorId]!!,
+        subject = row[subject]!!,
         text = row[text].orEmpty(),
         createDate = row[createDate]?: LocalDateTime.now(),
         closeDate = row[closeDate],
-        priorityId = row[priorityId] ?: 0,
-        statusId = row[statusId] ?: 0,
+        priorityId = row[priorityId]!!,
+        statusId = row[statusId]!!,
     )
 }
 
