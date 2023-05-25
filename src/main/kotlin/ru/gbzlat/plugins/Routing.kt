@@ -1,18 +1,20 @@
 package ru.gbzlat.plugins
 
-import com.auth0.jwt.JWT
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import io.ktor.http.*
 import io.ktor.server.routing.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.response.*
 import io.ktor.server.request.*
-import io.ktor.server.sessions.*
+import org.ktorm.dsl.eq
 import org.ktorm.dsl.insert
-import org.ktorm.entity.single
+import org.ktorm.dsl.update
 import org.ktorm.entity.toList
 import ru.gbzlat.database.models.*
+import ru.gbzlat.database.models.pojo.DepartmentPojo
+import ru.gbzlat.database.models.pojo.TicketPojo
 import ru.gbzlat.db
 import java.time.LocalDateTime
 
@@ -29,7 +31,7 @@ fun Application.configureRouting() {
             authenticate ("auth-jwt") {
                 usersRoute()
                 ticketsRoute()
-                divisionsRoute()
+                departmentsRoute()
                 enumsRoute()
             }
         }
@@ -44,16 +46,18 @@ fun Route.authenticationRoute() {
                 it.login == auth.login && it.password == auth.password
             }
 
-        //call.response.header(HttpHeaders.AccessControlAllowOrigin, "*")
-
         if (user != null) {
             val token = Authentication.instance.createAccessToken(user.id)
-            //call.sessions.set(AuthorizationHeader(token))
-            //call.response.cookies.append("token", token)
-            call.respond("{\"token\": \"${token}\"}")
+            call.respond(HttpStatusCode.OK,
+                "{" +
+                    "\"id\": \"${user.id}\"," +
+                    "\"name\": \"${user.name}\"," +
+                    "\"role\": \"${user.role!!.id}\"," +
+                    "\"token\": \"${token}\"" +
+                    "}")
         }
         else
-            call.respond(" {\"token\": \"null\"} ")
+            call.respond(HttpStatusCode.NotAcceptable, "Неверный логин или пароль")
     }
 }
 
@@ -86,16 +90,23 @@ fun Route.usersRoute() {
 
 fun Route.ticketsRoute() {
     route("/tickets") {
+
+        // Возвращает заявки
         get {
             val userId = call.principal<UserIdPrincipalForUser>()!!.id
-            val userRoleId = db.users.toList().single{it.id == userId}.roleId
+            val user = db.users.toList().single{it.id == userId}
 
-            when (userRoleId) {
-                1 -> call.respond(gson.toJson(db.tickets.toList().filter { it.creatorId ==  userId}))
-                2 -> call.respond(gson.toJson(db.tickets.toList().filter { it.executorId ==  userId}))
-                3 -> call.respond(gson.toJson(db.tickets.toList()))
+            when (user.roleId) {
+                1 -> call.respond(gson.toJson(db.tickets.toList().filter { it.creatorId == userId}))    // Сотрудник
+                2 -> call.respond(gson.toJson(db.tickets.toList().filter {ticket ->                     // ИТ-специалист
+                    val creator = db.users.toList().single{it.id == ticket.creatorId}
+                    return@filter creator.departmentId == user.departmentId
+                }))
+                3 -> call.respond(gson.toJson(db.tickets.toList()))                                     // Админ
             }
         }
+
+        // Возвращает заявку по id
         get ("/{id}") {
             call.respond(
                 gson.toJson(
@@ -103,28 +114,53 @@ fun Route.ticketsRoute() {
                         it.id == call.parameters["id"]?.toInt()
                     }))
         }
+
+        // Создает новую заявку
         post {
             try {
                 val ticket = call.receive<TicketPojo>()
 
-                val userId = call.principal<UserIdPrincipalForUser>()!!.id
-                val userDivisionId = db.users.toList().single { it.id == userId }.divisionId
-                val executorId = db.divisions.toList().single { it.id == userDivisionId }.programmerId
+                val user = db.users.toList().single { it.id == call.principal<UserIdPrincipalForUser>()!!.id }
+/*                val executor = db.users.toList().first { it.department!!.divisionId == user.department!!.divisionId && it.role!!.id == 2}*/
 
                 db.database.insert(Tickets) {
-                    set(it.creatorId, userId)
-                    set(it.executorId, executorId)
-                    set(it.subject, ticket.subject)
-                    set(it.text, ticket.text)
+                    set(it.creatorId, user.id)
+                    /*set(it.executorId, executor.id)*/
+                    set(it.details, ticket.details)
+                    set(it.categoryId, ticket.categoryId)
                     set(it.createDate, LocalDateTime.now())
-                    set(it.closeDate, null)
-                    set(it.priorityId, ticket.priorityId)
-                    set(it.statusId, 1)
                 }
 
-                call.respond(HttpStatusCode.OK);
+                call.respond(HttpStatusCode.OK)
             } catch (e: Exception){
                 call.respond(HttpStatusCode.NotAcceptable)
+            }
+        }
+
+        // Обновление данных
+        route ("/{id}"){
+            put ("/work/{executorId}") {
+                db.database.update(Tickets) {
+                    set(it.executorId, call.parameters["executorId"]!!.toInt())
+                    set(it.statusId, 3)
+                    where {
+                        it.id eq call.parameters["id"]!!.toInt()
+                    }
+                }
+
+                call.respond(HttpStatusCode.OK)
+            }
+
+            put ("/close") {
+                db.database.update(Tickets) {
+                    set(it.statusId, 2)
+                    set(it.closeDate, LocalDateTime.now())
+                    where {
+                        it.id eq call.parameters["id"]!!.toInt()
+                    }
+                }
+
+                call.respond(HttpStatusCode.OK)
             }
         }
     }
@@ -175,9 +211,20 @@ fun Route.enumsRoute() {
             )
         }
     }
-}
 
-fun Route.divisionsRoute() {
+    route("/problemCategories") {
+        get { call.respond(db.problemCategories.toList()) }
+        get("/{id}") {
+            call.respond(
+                gson.toJson(
+                    db.problemCategories.toList().singleOrNull {
+                        it.id == call.parameters["id"]?.toInt()
+                    }
+                )
+            )
+        }
+    }
+
     route("/divisions"){
         get {
             call.respond(db.divisions.toList())
@@ -190,6 +237,33 @@ fun Route.divisionsRoute() {
                     }
                 )
             )
+        }
+    }
+}
+
+fun Route.departmentsRoute() {
+    route("/departments") {
+        get { call.respond(db.departments.toList()) }
+        get ("/{id}") {
+            call.respond(
+                gson.toJson(
+                    db.departments.toList().singleOrNull{ it.id == call.parameters["id"]?.toInt() }
+                )
+            )
+        }
+        post {
+            try {
+                val department = call.receive<DepartmentPojo>()
+
+                db.database.insert(Departments) {
+                    set(it.divisionId, department.divisionId)
+                    set(it.name, department.name)
+                }
+
+                call.respond(HttpStatusCode.OK);
+            } catch (e: Exception){
+                call.respond(HttpStatusCode.NotAcceptable)
+            }
         }
     }
 }

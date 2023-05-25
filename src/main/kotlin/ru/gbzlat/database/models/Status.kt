@@ -21,8 +21,8 @@ object Statuses: BaseTable<Status>("Statuses") {
     val name = varchar("name")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean)= Status(
-        id = row[id] ?: 0,
-        name = row[name].orEmpty()
+        id = row[id]!!,
+        name = row[name]!!
     )
 }
 

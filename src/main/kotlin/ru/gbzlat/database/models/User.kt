@@ -1,23 +1,27 @@
 package ru.gbzlat.database.models
 
-import kotlinx.serialization.Serializable
 import org.ktorm.dsl.QueryRowSet
-import org.ktorm.entity.Entity
 import org.ktorm.entity.sequenceOf
+import org.ktorm.entity.toList
 import org.ktorm.schema.BaseTable
-import org.ktorm.schema.Table
 import org.ktorm.schema.int
 import org.ktorm.schema.varchar
 import ru.gbzlat.database.DatabaseManager
+import ru.gbzlat.db
 
 data class User (
     val id: Int,
     val name: String,
     val login: String,
     val password: String,
-    val token: String,
     val roleId: Int,
-    val divisionId: Int
+    val departmentId: Int,
+    val phoneNumber: String?,
+    val token: String?,
+    val tgChatId: String?,
+
+    val role: Role?,
+    val department: Department?
 )
 
 object Users: BaseTable<User>("Users") {
@@ -25,18 +29,25 @@ object Users: BaseTable<User>("Users") {
     val name = varchar("name")
     val login = varchar("login")
     val password = varchar("password")
-    val token = varchar("token")
     val roleId = int("role_id")
-    val divisionId = int("division_id")
+    val departmentId = int("department_id")
+    val phoneNumber = varchar("phone_number")
+    val token = varchar("token")
+    val tgChatId = varchar("tg_chat_id")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean)= User(
         id = row[id] ?: 0,
         name = row[name].orEmpty(),
         login = row[login].orEmpty(),
         password = row[password].orEmpty(),
-        token = row[token].orEmpty(),
         roleId = row[roleId] ?: 0,
-        divisionId = row[divisionId] ?: 0
+        departmentId = row[departmentId] ?: 0,
+        phoneNumber = row[phoneNumber].orEmpty(),
+        token = row[token].orEmpty(),
+        tgChatId = row[tgChatId].orEmpty(),
+
+        role = db.roles.toList().single { it.id == row[roleId] },
+        department = db.departments.toList().single { it.id == row[departmentId] }
     )
 }
 

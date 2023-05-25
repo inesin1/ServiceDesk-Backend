@@ -24,12 +24,4 @@ class DatabaseManager {
         val jdbcUrl = "jdbc:mysql://$hostname:3306/$databaseName?user=$username&password=$password&allowPublicKeyRetrieval=true&useSSL=false"
         database = Database.connect(jdbcUrl)
     }
-
-/*    fun getTable(tableName: String) : List<Any>{
-        return when(tableName) {
-            "UserTable" -> users.toList()
-
-            else -> emptyList()
-        }
-    }*/
 }

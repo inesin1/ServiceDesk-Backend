@@ -21,8 +21,8 @@ object Roles: BaseTable<Role>("Roles") {
     val name = varchar("name")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean)= Role(
-        id = row[id] ?: 0,
-        name = row[name].orEmpty()
+        id = row[id]!!,
+        name = row[name]!!
     )
 }
 

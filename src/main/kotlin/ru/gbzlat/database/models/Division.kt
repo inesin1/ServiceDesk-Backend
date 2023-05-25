@@ -13,19 +13,16 @@ import java.time.LocalDateTime
 @Serializable
 data class Division (
     val id: Int,
-    val name: String,
-    val programmerId: Int
+    val name: String
 )
 
 object Divisions: BaseTable<Division>("Divisions") {
     val id = int("id").primaryKey()
     val name = varchar("name")
-    val programmerId = int("programmer_id")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean)= Division(
-        id = row[id] ?: 0,
-        name = row[name].orEmpty(),
-        programmerId = row[programmerId] ?: 1
+        id = row[id]!!,
+        name = row[name]!!
     )
 }
 

@@ -8,6 +8,10 @@ $(document).ready(async function(){
     $('#navbarDropdown').html((await getCurrentUser()).name)
 
     await fillTicketData();
+
+    $('#selectStatus').on('change', function (e) {
+        updateTicketStatus(ticketId, e.currentTarget.value);
+    });
 });
 
 async function fillTicketData() {
@@ -29,92 +33,4 @@ function getTicketId() {
     });
 
     return params.id;
-}
-
-function logout() {
-    sessionStorage.removeItem('token');
-    window.location.href = '../pages/auth.html';
-}
-
-async function getTicket(id) {
-    try {
-        return await fetch('http://94.24.237.230:7171/api/tickets/' + id, {
-            mode: 'cors',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'bearer ' + sessionStorage.getItem('token')
-            },
-            method: "GET"
-        })
-            .then((response) => response.json())
-    } catch (err) {
-        console.log("Ошибка: " + err);
-    }
-}
-
-async function getCurrentUser() {
-    try {
-        return await fetch('http://94.24.237.230:7171/api/users/current', {
-            mode: 'cors',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'bearer ' + sessionStorage.getItem('token')
-            },
-            method: "GET"
-        })
-            .then((response) => response.json())
-    } catch (err) {
-        console.log("Ошибка: " + err);
-    }
-}
-
-// Получение статуса по id
-async function getStatus(id) {
-    try {
-        return await fetch('http://94.24.237.230:7171/api/statuses/' + id, {
-            mode: 'cors',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'bearer ' + sessionStorage.getItem('token')
-            },
-            method: "GET"
-        })
-            .then((response) => response.json())
-    } catch (err) {
-        console.log("Ошибка: " + err);
-    }
-}
-
-// Получение приоритета по id
-async function getPriority(id) {
-    try {
-        return await fetch('http://94.24.237.230:7171/api/priorities/' + id, {
-            mode: 'cors',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'bearer ' + sessionStorage.getItem('token')
-            },
-            method: "GET"
-        })
-            .then((response) => response.json())
-    } catch (err) {
-        console.log("Ошибка: " + err);
-    }
-}
-
-// Получение пользователя по id
-async function getUser(id) {
-    try {
-        return await fetch('http://94.24.237.230:7171/api/users/' + id, {
-            mode: 'cors',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'bearer ' + sessionStorage.getItem('token')
-            },
-            method: "GET"
-        })
-            .then((response) => response.json())
-    } catch (err) {
-        console.log("Ошибка: " + err);
-    }
 }
