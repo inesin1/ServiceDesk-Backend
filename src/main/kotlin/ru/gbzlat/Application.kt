@@ -9,7 +9,7 @@ import ru.gbzlat.plugins.*
  val db = DatabaseManager()
 
 /*fun main() {
-    *//*embeddedServer(Netty, port = 7171, host = "0.0.0.0", module = Application::module)
+    *//*embeddedServer(Netty, port = 0102, host = "0.0.0.0", module = Application::module)
         .start(wait = true)*//*
 
 }*/
