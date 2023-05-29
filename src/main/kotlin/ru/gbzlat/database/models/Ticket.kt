@@ -1,9 +1,7 @@
 package ru.gbzlat.database.models
 
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import org.ktorm.dsl.QueryRowSet
-import org.ktorm.entity.Entity
 import org.ktorm.entity.sequenceOf
 import org.ktorm.schema.*
 import ru.gbzlat.database.DatabaseManager
@@ -14,14 +12,14 @@ import java.time.LocalDateTime
 data class Ticket (
     val id: Int,
     val creatorId: Int,
-    val executorId: Int,
-    val subject: String,
-    val text: String?,
+    val executorId: Int?,
+    val details: String?,
+    val categoryId: Int,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createDate: LocalDateTime,
     @Serializable(with = LocalDateTimeSerializer::class)
     val closeDate: LocalDateTime?,
-    val priorityId: Int,
+    val timeLimit: Int,
     val statusId: Int,
 )
 
@@ -29,23 +27,23 @@ object Tickets: BaseTable<Ticket>("Tickets") {
     val id = int("id").primaryKey()
     val creatorId = int("creator_id")
     val executorId = int("executor_id")
-    val subject = varchar("subject")
-    val text = varchar("text")
+    val details = varchar("details")
+    val categoryId = int("category_id")
     val createDate = datetime("create_date")
     val closeDate = datetime("close_date")
-    val priorityId = int("priority_id")
+    val timeLimit = int("time_limit")
     val statusId = int("status_id")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean)= Ticket(
         id = row[id]!!,
         creatorId = row[creatorId]!!,
-        executorId = row[executorId]!!,
-        subject = row[subject]!!,
-        text = row[text].orEmpty(),
+        executorId = row[executorId],
+        details = row[details].orEmpty(),
+        categoryId = row[categoryId]!!,
         createDate = row[createDate]?: LocalDateTime.now(),
         closeDate = row[closeDate],
-        priorityId = row[priorityId]!!,
-        statusId = row[statusId]!!,
+        timeLimit = row[timeLimit]!!,
+        statusId = row[statusId]!!
     )
 }
 
