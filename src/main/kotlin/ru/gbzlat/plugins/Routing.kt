@@ -14,6 +14,7 @@ import ru.gbzlat.database.models.*
 import ru.gbzlat.database.models.pojo.DepartmentPojo
 import ru.gbzlat.database.models.pojo.TicketPojo
 import ru.gbzlat.database
+import ru.gbzlat.database.models.pojo.Auth
 import java.time.LocalDateTime
 
 fun Application.configureRouting() {
@@ -72,7 +73,7 @@ fun Route.usersRoute() {
                     }))
         }
         get ("/current") {
-            val userId = call.principal<UserIdPrincipalForUser>()!!.id
+            val userId = call.principal<UserPrincipal>()!!.id
 
             call.respond(
                 gson.toJson(
@@ -91,7 +92,7 @@ fun Route.ticketsRoute() {
 
         // Возвращает заявки
         get {
-            val userId = call.principal<UserIdPrincipalForUser>()!!.id
+            val userId = call.principal<UserPrincipal>()!!.id
             val user = database.users.toList().single{it.id == userId}
 
             when (user.roleId) {
@@ -117,9 +118,7 @@ fun Route.ticketsRoute() {
         post {
             try {
                 val ticket = call.receive<TicketPojo>()
-
-                val user = database.users.toList().single { it.id == call.principal<UserIdPrincipalForUser>()!!.id }
-/*                val executor = db.users.toList().first { it.department!!.divisionId == user.department!!.divisionId && it.role!!.id == 2}*/
+                val user = database.users.toList().single { it.id == call.principal<UserPrincipal>()!!.id }
 
                 database.database.insert(Tickets) {
                     set(it.creatorId, user.id)

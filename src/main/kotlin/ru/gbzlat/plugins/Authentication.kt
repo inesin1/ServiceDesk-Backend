@@ -4,7 +4,6 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 
 class Authentication private constructor(secret: String){
@@ -24,8 +23,8 @@ class Authentication private constructor(secret: String){
         .sign(algorithm)
 
     companion object {
-        private const val ISSUER = "myApp"
-        private const val AUDIENCE = "myApp"
+        private const val ISSUER = "http://10.9.5.127:1002"
+        private const val AUDIENCE = "http://10.9.5.127:1002/hello"
         const val CLAIM = "id"
 
         lateinit var instance: Authentication
@@ -49,7 +48,7 @@ fun Application.configureAuthentication() {
             validate {
                 val claim = it.payload.getClaim(Authentication.CLAIM).asInt()
                 if (claim != null){
-                    UserIdPrincipalForUser(claim)
+                    UserPrincipal(claim)
                 } else {
                     null
                 }

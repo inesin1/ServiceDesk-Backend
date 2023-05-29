@@ -15,12 +15,6 @@ fun Application.configureDatabase(env: ApplicationEnvironment) {
 }
 
 class DatabaseManager(hostname: String, port: String, db: String, username: String, password: String) {
-/*    private val hostname = "10.9.5.127"
-    private val port =
-    private val databaseName = "sd_db"
-    private val username = "nesln"
-    private val password = "bujhmytcby123A/"*/
-
     val database: Database
 
     init {

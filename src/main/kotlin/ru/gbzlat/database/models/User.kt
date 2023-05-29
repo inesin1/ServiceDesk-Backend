@@ -52,26 +52,3 @@ object Users: BaseTable<User>("Users") {
 }
 
 val DatabaseManager.users get() = database.sequenceOf(Users)
-
-/*
-object UserTable: Table<UserEntity>("Users"){
-    val id = int("id").primaryKey().bindTo { it.id }
-    val name = varchar("name").bindTo { it.name }
-    val login = varchar("login").bindTo { it.login }
-    val password = varchar("password").bindTo { it.password }
-    val roleId = int("role_id").bindTo { it.roleId }
-    val divisionId = int("division_id").bindTo { it.divisionId }
-    val subdivisionId = int("subdivision_id").bindTo { it.subdivisionId }
-}
-
-interface UserEntity: Entity<UserEntity> {
-    companion object : Entity.Factory<UserEntity>()
-
-    val id: Int
-    val name: String
-    val login: String
-    val password: String
-    val roleId: Int
-    val divisionId: Int
-    val subdivisionId: Int
-}*/
