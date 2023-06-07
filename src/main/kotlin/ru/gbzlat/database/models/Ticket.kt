@@ -19,7 +19,8 @@ data class Ticket (
     val createDate: LocalDateTime,
     @Serializable(with = LocalDateTimeSerializer::class)
     val closeDate: LocalDateTime?,
-    val timeLimit: Int,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    val timeLimit: LocalDateTime,
     val statusId: Int,
 )
 
@@ -31,7 +32,7 @@ object Tickets: BaseTable<Ticket>("Tickets") {
     val categoryId = int("category_id")
     val createDate = datetime("create_date")
     val closeDate = datetime("close_date")
-    val timeLimit = int("time_limit")
+    val timeLimit = datetime("time_limit")
     val statusId = int("status_id")
 
     override fun doCreateEntity(row: QueryRowSet, withReferences: Boolean)= Ticket(
