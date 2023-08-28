@@ -20,6 +20,7 @@ application {
 
 repositories {
     mavenCentral()
+    maven(url = "https://www.jitpack.io")
 }
 
 dependencies {
@@ -44,6 +45,9 @@ dependencies {
     implementation("org.ktorm:ktorm-core:3.6.0")
     implementation("org.ktorm:ktorm-support-mysql:3.6.0")
     implementation("mysql:mysql-connector-java:8.0.32")
+
+    // telegram
+    implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.1.0")
 
     // test
     testImplementation("io.ktor:ktor-server-test-host:$ktor_version")

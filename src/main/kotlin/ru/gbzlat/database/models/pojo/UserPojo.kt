@@ -10,5 +10,5 @@ data class UserPojo(
     val roleId: Int,
     val departmentId: Int,
     val phoneNumber: String?,
-    val tgChatId: String?
+    val tgChatId: Long?
 )

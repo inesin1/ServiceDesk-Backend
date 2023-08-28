@@ -2,6 +2,8 @@ package ru.gbzlat.database.models
 
 import kotlinx.serialization.Serializable
 import org.ktorm.dsl.QueryRowSet
+import org.ktorm.dsl.eq
+import org.ktorm.entity.find
 import org.ktorm.entity.sequenceOf
 import org.ktorm.entity.toList
 import org.ktorm.schema.*
@@ -27,7 +29,7 @@ object Departments: BaseTable<Department>("Departments") {
         name = row[name]!!,
         divisionId = row[divisionId]!!,
 
-        division = database.divisions.toList().single { it.id == row[divisionId] }
+        division = database.divisions.find { it.id eq row[divisionId]!!.toInt() }!!
     )
 }
 
