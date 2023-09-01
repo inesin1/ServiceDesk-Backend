@@ -19,6 +19,7 @@ import ru.gbzlat.database.models.pojo.*
 import ru.gbzlat.tgbot
 import java.io.File
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 
 fun Application.configureRouting() {
@@ -91,6 +92,12 @@ fun Route.usersRoute() {
         }
         get ("/it") {
             call.respond(gson.toJson(database.users.filter { (it.roleId eq 2) or (it.roleId eq 3) }.toList()))
+        }
+        get ("/checklogin/{login}") {
+            if (database.users.find { it.login eq call.parameters["login"]!!.toString() } == null)
+                call.respond("ok")
+            else
+                call.respond("err")
         }
         post {
             try {
@@ -195,6 +202,22 @@ fun Route.usersRoute() {
                 call.respond(HttpStatusCode.NotAcceptable, e.message!!)
             }
         }
+        put("/{id}/changePassword") {
+            try {
+                val newPassword = call.receiveText()
+                val userId = call.parameters["id"]!!.toInt()
+
+                database.database.update(Users) {
+                    set(it.password, newPassword)
+                    where {
+                        it.id eq userId
+                    }
+                }
+                call.respond(HttpStatusCode.OK, userId)
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.NotAcceptable, e.message!!)
+            }
+        }
         delete("/{id}") {
             database.database.delete(Users) { it.id eq call.parameters["id"]!!.toInt() }
             call.respond(HttpStatusCode.OK)
@@ -214,7 +237,8 @@ fun Route.ticketsRoute() {
                 1 -> call.respond(gson.toJson(database.tickets.filter { it.creatorId eq userId}.toList()))    // Сотрудник
                 2 -> call.respond(gson.toJson(database.tickets.toList().filter { ticket ->                    // ИТ-специалист
                     val creator = database.users.find { it.id eq ticket.creatorId }!!
-                    return@filter creator.departmentId == user.departmentId
+                    return@filter creator.department!!.divisionId == user.department!!.divisionId ||
+                            user.id == ticket.executorId
                 }))
                 3 -> call.respond(gson.toJson(database.tickets.toList()))                           // Админ
             }
@@ -239,8 +263,8 @@ fun Route.ticketsRoute() {
                     set(it.creatorId, user.id)
                     set(it.details, ticket.details)
                     set(it.categoryId, ticket.categoryId)
-                    set(it.timeLimit, LocalDateTime.now().plusDays(1))
-                    set(it.createDate, LocalDateTime.now())
+                    set(it.timeLimit, LocalDateTime.now(ZoneId.systemDefault()).plusDays(1))
+                    set(it.createDate, LocalDateTime.now(ZoneId.systemDefault()))
                 }
 
                 database.users.filter { ((it.roleId eq 3) or (it.roleId eq 2)) and (it.departmentId eq user.departmentId) }.forEach {
@@ -281,7 +305,7 @@ fun Route.ticketsRoute() {
             put ("/close") {
                 database.database.update(Tickets) {
                     set(it.statusId, 2)
-                    set(it.closeDate, LocalDateTime.now())
+                    set(it.closeDate, LocalDateTime.now(ZoneId.systemDefault()))
                     where {
                         it.id eq call.parameters["id"]!!.toInt()
                     }
