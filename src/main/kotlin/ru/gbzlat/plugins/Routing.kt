@@ -21,6 +21,7 @@ import java.io.File
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.util.*
 
 fun Application.configureRouting() {
     routing {
@@ -263,8 +264,8 @@ fun Route.ticketsRoute() {
                     set(it.creatorId, user.id)
                     set(it.details, ticket.details)
                     set(it.categoryId, ticket.categoryId)
-                    set(it.timeLimit, LocalDateTime.now(ZoneId.systemDefault()).plusDays(1))
-                    set(it.createDate, LocalDateTime.now(ZoneId.systemDefault()))
+                    set(it.timeLimit, LocalDateTime.now(TimeZone.getTimeZone("GMT+5").toZoneId()).plusDays(1))
+                    set(it.createDate, LocalDateTime.now(TimeZone.getTimeZone("GMT+5").toZoneId()))
                 }
 
                 database.users.filter { ((it.roleId eq 3) or (it.roleId eq 2)) and (it.departmentId eq user.departmentId) }.forEach {
@@ -305,7 +306,7 @@ fun Route.ticketsRoute() {
             put ("/close") {
                 database.database.update(Tickets) {
                     set(it.statusId, 2)
-                    set(it.closeDate, LocalDateTime.now(ZoneId.systemDefault()))
+                    set(it.closeDate, LocalDateTime.now(TimeZone.getTimeZone("GMT+5").toZoneId()))
                     where {
                         it.id eq call.parameters["id"]!!.toInt()
                     }
