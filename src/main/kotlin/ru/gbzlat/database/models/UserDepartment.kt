@@ -6,18 +6,18 @@ import org.ktorm.entity.sequenceOf
 import org.ktorm.schema.*
 import ru.gbzlat.database
 
-interface Status : Entity<Status> {
-    companion object : Entity.Factory<Status>()
+interface UserDepartment : Entity<UserDepartment> {
+    companion object : Entity.Factory<UserDepartment>()
 
-    var id: Int
-    var name: String
+    var user: User
+    var department: Department
 }
 
-object Statuses : Table<Status>("Statuses") {
-    val id = int("id").primaryKey().bindTo { it.id }
-    val name = varchar("name").bindTo { it.name }
+object UserDepartments : Table<UserDepartment>("User_Departments") {
+    val userId = int("user_id").primaryKey().references(Users) { it.user }
+    val departmentId = int("department_id").primaryKey().references(Departments) { it.department }
 
-    val Database.statuses get() = database.sequenceOf(Statuses)
+    val Database.userDepartments get() = database.sequenceOf(UserDepartments)
 }
 
 /*@Serializable

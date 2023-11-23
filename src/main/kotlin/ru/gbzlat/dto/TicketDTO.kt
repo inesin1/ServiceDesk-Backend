@@ -1,9 +1,9 @@
-package ru.gbzlat.database.models.pojo
+package ru.gbzlat.dto
 
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class TicketPojo(
+data class TicketDTO(
     val categoryId: Int,
     val details: String?,
 )

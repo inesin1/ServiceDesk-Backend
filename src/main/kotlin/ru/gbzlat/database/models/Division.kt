@@ -1,16 +1,7 @@
 package ru.gbzlat.database.models
 
-import kotlinx.serialization.Contextual
-import kotlinx.serialization.Serializable
-import org.ktorm.dsl.QueryRowSet
-import org.ktorm.entity.Entity
-import org.ktorm.entity.sequenceOf
-import org.ktorm.schema.*
-import ru.gbzlat.database.DatabaseManager
-import ru.gbzlat.plugins.LocalDateTimeSerializer
-import java.time.LocalDateTime
 
-@Serializable
+/*@Serializable
 data class Division (
     val id: Int,
     val name: String
@@ -24,6 +15,6 @@ object Divisions: BaseTable<Division>("Divisions") {
         id = row[id]!!,
         name = row[name]!!
     )
-}
+}*/
 
-val DatabaseManager.divisions get() = database.sequenceOf(Divisions)
+//val DatabaseManager.divisions get() = database.sequenceOf(Divisions)

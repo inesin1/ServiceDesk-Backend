@@ -1,14 +1,14 @@
-package ru.gbzlat.database.models.pojo
+package ru.gbzlat.dto
 
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserPojo(
+data class UserDTO(
     val name: String,
     val login: String,
     val password: String,
     val roleId: Int,
-    val departmentId: Int,
-    val phoneNumber: String?,
+    val departmentIds: List<Int>,
+    val phone: String?,
     val tgChatId: Long?
 )

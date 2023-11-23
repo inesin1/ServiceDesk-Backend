@@ -1,16 +1,26 @@
 package ru.gbzlat.database.models
 
-import kotlinx.serialization.Serializable
-import org.ktorm.dsl.QueryRowSet
-import org.ktorm.dsl.eq
-import org.ktorm.entity.find
+import org.ktorm.database.Database
+import org.ktorm.entity.Entity
 import org.ktorm.entity.sequenceOf
-import org.ktorm.entity.toList
 import org.ktorm.schema.*
-import ru.gbzlat.database.DatabaseManager
 import ru.gbzlat.database
 
-@Serializable
+interface Department : Entity<Department> {
+    companion object : Entity.Factory<Department>()
+
+    val id: Int
+    var name: String
+}
+
+object Departments : Table<Department>("Departments") {
+    val id = int("id").primaryKey().bindTo { it.id }
+    val name = varchar("name").bindTo { it.name }
+
+    val Database.departments get() = database.sequenceOf(Departments)
+}
+
+/*@Serializable
 data class Department (
     val id: Int,
     val name: String,
@@ -31,6 +41,5 @@ object Departments: BaseTable<Department>("Departments") {
 
         division = database.divisions.find { it.id eq row[divisionId]!!.toInt() }!!
     )
-}
+}*/
 
-val DatabaseManager.departments get() = database.sequenceOf(Departments)

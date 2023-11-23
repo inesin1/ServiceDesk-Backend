@@ -1,4 +1,4 @@
-package ru.gbzlat.plugins
+package ru.gbzlat.authentication
 
 import io.ktor.server.auth.*
 

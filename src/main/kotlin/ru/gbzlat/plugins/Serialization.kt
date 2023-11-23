@@ -1,24 +1,25 @@
 package ru.gbzlat.plugins
 
-import com.google.gson.GsonBuilder
-import io.ktor.http.*
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.util.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 
-val gson = GsonBuilder().create()
-
+val objectMapper = ObjectMapper()
 fun Application.configureSerialization() {
     install(ContentNegotiation) {
         json()
     }
+
+    objectMapper.findAndRegisterModules()
+    objectMapper.setDateFormat(SimpleDateFormat("yyyy-MM-dd HH:mm a z"))
 }
 
 object LocalDateTimeSerializer : KSerializer<LocalDateTime> {

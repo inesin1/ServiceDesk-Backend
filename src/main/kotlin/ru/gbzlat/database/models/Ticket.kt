@@ -1,14 +1,44 @@
 package ru.gbzlat.database.models
 
-import kotlinx.serialization.Serializable
-import org.ktorm.dsl.QueryRowSet
+import org.ktorm.database.Database
+import org.ktorm.entity.Entity
 import org.ktorm.entity.sequenceOf
 import org.ktorm.schema.*
-import ru.gbzlat.database.DatabaseManager
-import ru.gbzlat.plugins.LocalDateTimeSerializer
+import ru.gbzlat.database
 import java.time.LocalDateTime
 
-@Serializable
+interface Ticket : Entity<Ticket> {
+    companion object : Entity.Factory<Ticket>()
+
+    val id: Int
+    var creator: User
+    var executor: User?
+    var details: String?
+    var category: TicketCategory
+    //@Serializable(with = LocalDateTimeSerializer::class)
+    var createdAt: LocalDateTime
+    //@Serializable(with = LocalDateTimeSerializer::class)
+    var closedAt: LocalDateTime?
+    //@Serializable(with = LocalDateTimeSerializer::class)
+    var timeLimit: LocalDateTime
+    var status: Status
+}
+
+object Tickets : Table<Ticket>("Tickets") {
+    val id = int("id").primaryKey().bindTo { it.id }
+    val creatorId = int("creator_id").references(Users) { it.creator }
+    val executorId = int("executor_id").references(Users) { it.executor }
+    val details = varchar("details").bindTo { it.details }
+    val categoryId = int("category_id").references(TicketCategories) { it.category }
+    val createdAt = datetime("created_at").bindTo { it.createdAt }
+    val closedAt = datetime("closed_at").bindTo { it.closedAt }
+    val timeLimit = datetime("time_limit").bindTo { it.timeLimit }
+    val statusId = int("status_id").references(Statuses) { it.status }
+
+    val Database.tickets get() = database.sequenceOf(Tickets)
+}
+
+/*@Serializable
 data class Ticket (
     val id: Int,
     val creatorId: Int,
@@ -22,9 +52,9 @@ data class Ticket (
     @Serializable(with = LocalDateTimeSerializer::class)
     val timeLimit: LocalDateTime,
     val statusId: Int,
-)
+)*/
 
-object Tickets: BaseTable<Ticket>("Tickets") {
+/*object Tickets: BaseTable<Ticket>("Tickets") {
     val id = int("id").primaryKey()
     val creatorId = int("creator_id")
     val executorId = int("executor_id")
@@ -46,6 +76,4 @@ object Tickets: BaseTable<Ticket>("Tickets") {
         timeLimit = row[timeLimit]!!,
         statusId = row[statusId]!!
     )
-}
-
-val DatabaseManager.tickets get() = database.sequenceOf(Tickets)
+}*/

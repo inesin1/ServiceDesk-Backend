@@ -1,9 +1,9 @@
-package ru.gbzlat.database.models.pojo
+package ru.gbzlat.dto
 
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Auth (
+data class AuthRequest (
     val login: String,
     val password: String
 )
