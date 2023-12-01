@@ -14,6 +14,7 @@ interface Ticket : Entity<Ticket> {
     var creator: User
     var executor: User?
     var details: String?
+    var source: TicketSource
     var category: TicketCategory
     //@Serializable(with = LocalDateTimeSerializer::class)
     var createdAt: LocalDateTime
@@ -29,6 +30,7 @@ object Tickets : Table<Ticket>("Tickets") {
     val creatorId = int("creator_id").references(Users) { it.creator }
     val executorId = int("executor_id").references(Users) { it.executor }
     val details = varchar("details").bindTo { it.details }
+    val sourceId = int("source_id").references(TicketSources) { it.source }
     val categoryId = int("category_id").references(TicketCategories) { it.category }
     val createdAt = datetime("created_at").bindTo { it.createdAt }
     val closedAt = datetime("closed_at").bindTo { it.closedAt }

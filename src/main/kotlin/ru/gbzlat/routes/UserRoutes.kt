@@ -28,14 +28,24 @@ fun Route.userRoute() {
             try {
                 val offset = call.request.queryParameters["offset"]?.toInt()
                 val limit = call.request.queryParameters["limit"]?.toInt()
+                val with = call.request.queryParameters["with"]?.split(",")
 
                 val users = database.users
                     .drop(offset?:0)
-                    .take(limit?:100)
-                    .map {
-                        it.initAdds()
-                        return@map it
+                    .take(limit?:1000)
+                    .toList()
+
+                with?.map {
+                    when (it) {
+                        "departments" -> {
+                            users.map {user ->
+                                user.addDepartments()
+                            }
+                        }
+
+                        else -> {}
                     }
+                }
 
                 call.respond(
                     objectMapper.writeValueAsString(
@@ -57,8 +67,16 @@ fun Route.userRoute() {
                         call.respond(HttpStatusCode.NotFound)
                     }
 
-                    // init adds (departments, etc.)
-                    user!!.initAdds()
+                    val with = call.request.queryParameters["with"]?.split(",")
+                    with?.map {
+                        when (it) {
+                            "departments" -> {
+                                user!!.addDepartments()
+                            }
+
+                            else -> {}
+                        }
+                    }
 
                     call.respond(
                         objectMapper.writeValueAsString(
@@ -84,8 +102,16 @@ fun Route.userRoute() {
                     call.respond(HttpStatusCode.NotFound)
                 }
 
-                // init adds (departments etc)
-                currentUser!!.initAdds()
+                val with = call.request.queryParameters["with"]?.split(",")
+                with?.map {
+                    when (it) {
+                        "departments" -> {
+                            currentUser!!.addDepartments()
+                        }
+
+                        else -> {}
+                    }
+                }
 
                 call.respond(
                     objectMapper.writeValueAsString(
@@ -99,16 +125,28 @@ fun Route.userRoute() {
         }
         get ("/specialists") {
             try {
+                val users = database.users
+                    .filter {
+                        (it.roleId eq 2) or (it.roleId eq 3)
+                    }
+                    .toList()
+
+                val with = call.request.queryParameters["with"]?.split(",")
+                with?.map {
+                    when (it) {
+                        "departments" -> {
+                            users.map {user ->
+                                user.addDepartments()
+                            }
+                        }
+
+                        else -> {}
+                    }
+                }
+
                 call.respond(
                     objectMapper.writeValueAsString(
-                        database.users
-                            .filter {
-                                (it.roleId eq 2) or (it.roleId eq 3)
-                            }
-                            .map {
-                                it.initAdds()
-                                return@map it
-                            }
+                        users
                     )
                 )
             } catch (e: Exception) {
@@ -116,12 +154,12 @@ fun Route.userRoute() {
                 call.respond("Произошла ошибка: ${e.message}")
             }
         }
-/*        get ("/checklogin/{login}") {
+        get ("/checklogin/{login}") {
             if (database.users.find { it.login eq call.parameters["login"]!!.toString() } == null)
                 call.respond("ok")
             else
                 call.respond("err")
-        }*/
+        }
         post {
             try {
                 val userData = call.receive<UserDTO>()
@@ -256,8 +294,15 @@ fun Route.userRoute() {
         delete("/{id}") {
             try {
                 val id = call.parameters["id"]!!.toInt()
-                database.delete(Users) {
-                    it.id eq id
+
+                database.useTransaction {
+                    database.delete(UserDepartments) {
+                        it.userId eq id
+                    }
+
+                    database.delete(Users) {
+                        it.id eq id
+                    }
                 }
 
                 call.respond(id)
@@ -273,7 +318,7 @@ fun Route.userRoute() {
 
 // /users/roles
 fun Route.roleRoute() {
-    route("/users/roles"){
+    route("/roles"){
         get {
             try {
                 call.respond(

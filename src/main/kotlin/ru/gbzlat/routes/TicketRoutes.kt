@@ -20,6 +20,7 @@ import ru.gbzlat.dto.TicketCommentDTO
 import ru.gbzlat.dto.SimpleData
 import ru.gbzlat.dto.TicketDTO
 import ru.gbzlat.authentication.UserPrincipal
+import ru.gbzlat.database.models.TicketSources.ticketSources
 import ru.gbzlat.plugins.objectMapper
 import ru.gbzlat.tgbot
 import java.time.LocalDateTime
@@ -29,50 +30,114 @@ fun Route.ticketRoute() {
     route("/tickets") {
         get {
             try {
+                val params = call.request.queryParameters
+
                 val userId = call.principal<UserPrincipal>()!!.id
                 val user = database.users.find { it.id eq userId }!!
 
-                val limit = call.request.queryParameters["limit"]?.toInt()
-                val offset = call.request.queryParameters["offset"]?.toInt()
+                val limit = params["limit"]?.toInt()
+                val offset = params["offset"]?.toInt()
 
-                val tickets = when (user.role.id) {
+                val filter: MutableMap<String, List<String>?> = mutableMapOf()
+                filter["creators"] = params["creators"]?.let {
+                    if (it != "")
+                        it.split(",")
+                    else
+                        null
+                }
+                filter["executors"] = params["executors"]?.let {
+                    if (it != "")
+                        it.split(",")
+                    else
+                        null
+                }
+                filter["categories"] = params["categories"]?.let {
+                    if (it != "")
+                        it.split(",")
+                    else
+                        null
+                }
+                filter["statuses"] = params["statuses"]?.let {
+                    if (it != "")
+                        it.split(",")
+                    else
+                        null
+                }
+                filter["departments"] = params["departments"]?.let {
+                    if (it != "")
+                        it.split(",")
+                    else
+                        null
+                }
+
+                var tickets = when (user.role.id) {
                     // Сотрудник
                     1 -> database.tickets.filter {
                         it.creatorId eq userId
                     }
                         .drop(offset?:0)
-                        .take(limit?:100)
-                        .toList()
+                        .take(limit?:1000)
+                        .sortedByDescending { it.id }
 
-/*                    // ИТ-специалист
-                    2 -> {
-                        call.respond(
-                            database.tickets.filter { ticket ->
-                                val creator = database.users.find {
-                                    it.id eq ticket.creatorId
-                                }!!
-
-                                return@filter user.id eq ticket.executorId
-                            }
-                        )
-                    }*/
 
                     // Админ
                     2, 3 -> database.tickets
                         .drop(offset?:0)
                         .take(limit?:100)
-                        .toList()
+                        .sortedByDescending { it.id }
 
                     else -> null
                 }
 
-                if (tickets == null) {
-                    call.respond(HttpStatusCode.NotFound)
+                // Фильтр
+                if (filter["statuses"] != null) {
+                    tickets = tickets!!.filter {
+                        it.statusId.inList(
+                            filter["statuses"]!!.map { s -> s.toInt() }
+                        )
+                    }
                 }
+
+                if (filter["executors"] != null) {
+                    tickets = tickets!!.filter {
+                        it.executorId.inList(
+                            filter["executors"]!!.map { s -> s.toInt() }
+                        )
+                    }
+                }
+
+                if (filter["categories"] != null) {
+                    tickets = tickets!!.filter {
+                        it.categoryId.inList(
+                            filter["categories"]!!.map { s -> s.toInt() }
+                        )
+                    }
+                }
+
+                if (filter["creators"] != null) {
+                    tickets = tickets!!.filter {
+                        it.creatorId.inList(
+                            filter["creators"]!!.map { s -> s.toInt() }
+                        )
+                    }
+                }
+
+/*                if (filter["departments"] != null) {
+                    database.users.filter {
+                        it.
+                    }
+
+                    tickets = tickets!!.filter {
+                        it.creatorId.inList(
+                            filter["departments"]!!.map { s -> s.toInt() }
+                        )
+                    }
+                }*/
+
 
                 call.respond(
                     objectMapper.writeValueAsString(
-                        tickets!!
+                        tickets!!.toList()
                     )
                 )
             } catch (e: Exception) {
@@ -80,16 +145,21 @@ fun Route.ticketRoute() {
                 call.respond("Произошла ошибка: ${e.message}")
             }
         }
+        get ("/count") {
+            val ticketsCount: Int = database.tickets
+                .aggregateColumns { count() }!!
+
+            call.respond(ticketsCount)
+        }
         post {
             try {
                 val ticketData = call.receive<TicketDTO>()
-                val creator = database.users.find {
-                    it.id eq call.principal<UserPrincipal>()!!.id
-                }!!
+                val creator = database.users.find { it.id eq ticketData.creatorId }!!
 
                 database.tickets.add(Ticket {
                     this.creator = creator
                     details = ticketData.details
+                    source = database.ticketSources.find { it.id eq ticketData.sourceId }!!
                     category = database.ticketCategories.find { it.id eq ticketData.categoryId }!!
                     timeLimit =
                         LocalDateTime.now(
@@ -190,6 +260,7 @@ fun Route.ticketRoute() {
         }
 
         statusRoute()
+        ticketSourceRoute()
         ticketCategoryRoute()
     }
 }
@@ -378,6 +449,72 @@ fun Route.ticketCategoryRoute() {
     }
 }
 
+fun Route.ticketSourceRoute() {
+    route("/sources") {
+        get {
+            try {
+                call.respond(
+                    objectMapper.writeValueAsString(
+                        database.ticketSources.toList()
+                    )
+                )
+            } catch (e: Exception) {
+                println("Произошла ошибка: ${e.message}")
+                call.respond("Произошла ошибка: ${e.message}")
+            }
+        }
+        get("/{id}") {
+            try {
+                val id = call.parameters["id"]!!.toInt()
+                val ticketSource = database.ticketSources.find {
+                    it.id eq id
+                }
+
+                if (ticketSource == null) {
+                    call.respond(HttpStatusCode.NotFound)
+                }
+
+                call.respond(
+                    objectMapper.writeValueAsString(
+                        ticketSource!!
+                    )
+                )
+            } catch (e: Exception) {
+                println("Произошла ошибка: ${e.message}")
+                call.respond("Произошла ошибка: ${e.message}")
+            }
+        }
+        post {
+            try {
+                val ticketSourceData = call.receive<SimpleData>()
+
+                database.ticketSources.add( TicketSource {
+                    name = ticketSourceData.name
+                })
+
+                call.respond(HttpStatusCode.Created)
+            } catch (e: Exception){
+                println("Произошла ошибка: ${e.message}")
+                call.respond("Произошла ошибка: ${e.message}")
+            }
+        }
+        delete("/{id}") {
+            try {
+                val id = call.parameters["id"]!!.toInt()
+
+                database.delete(TicketSources) {
+                    it.id eq id
+                }
+
+                call.respond(id)
+            } catch (e: Exception) {
+                println("Произошла ошибка: ${e.message}")
+                call.respond("Произошла ошибка: ${e.message}")
+            }
+        }
+    }
+}
+
 fun Route.ticketCommentRoute() {
     route("/comments") {
         get {
@@ -421,7 +558,7 @@ fun Route.ticketCommentRoute() {
                     ticketId = id
                     creator = database.users.find { it.id eq ticketCommentData.creatorId }!!
                     text = ticketCommentData.text
-                    createdAt = LocalDateTime.now()
+                    createdAt = LocalDateTime.now(TimeZone.getTimeZone("GMT+5").toZoneId())
                 })
 
                 call.respond(HttpStatusCode.Created)

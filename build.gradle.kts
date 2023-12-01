@@ -41,7 +41,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jackson_version")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktor_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    implementation("io.ktor:ktor-serialization-jackson:$ktor_version")
     implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
 
     // database

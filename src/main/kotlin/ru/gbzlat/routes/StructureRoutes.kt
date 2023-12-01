@@ -21,7 +21,11 @@ fun Route.departmentRoute() {
     route("/departments") {
         get {
             try {
-                call.respond(database.departments.toList())
+                call.respond(
+                    objectMapper.writeValueAsString(
+                        database.departments.toList()
+                    )
+                )
             } catch (e: Exception) {
                 println("Произошла ошибка: ${e.message}")
                 call.respond("Произошла ошибка: ${e.message}")

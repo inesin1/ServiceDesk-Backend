@@ -24,7 +24,7 @@ interface User : Entity<User> {
     var tgChatId: Long?
 
     // Инициализирует дополнительные поля
-    fun initAdds() {
+    fun addDepartments() {
         departments = database.userDepartments
             .filter { it.userId eq id }
             .map { it.department }
