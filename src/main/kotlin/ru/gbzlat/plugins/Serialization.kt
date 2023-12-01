@@ -1,6 +1,7 @@
 package ru.gbzlat.plugins
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import kotlinx.serialization.KSerializer
@@ -18,6 +19,7 @@ fun Application.configureSerialization() {
         jackson()
     }
 
+    objectMapper.registerModule(JavaTimeModule())
     objectMapper.findAndRegisterModules()
     objectMapper.setDateFormat(SimpleDateFormat("yyyy-MM-dd HH:mm a z"))
 }
