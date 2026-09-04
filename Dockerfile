@@ -1,10 +1,17 @@
-FROM openjdk:11-jdk
+FROM eclipse-temurin:21-jdk AS build
 
 WORKDIR /workdir/server
-COPY . .
+COPY gradle gradle
+COPY gradlew gradle.properties settings.gradle.kts build.gradle.kts ./
+RUN ./gradlew --no-daemon dependencies
 
-SHELL ["/bin/bash", "-c"]
-RUN sed -i -e 's/\r$//' gradlew
+COPY src src
+RUN ./gradlew --no-daemon buildFatJar
+
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+COPY --from=build /workdir/server/build/libs/*-all.jar app.jar
 
 EXPOSE 1002
-CMD ./gradlew runFatJar
+CMD ["java", "-jar", "app.jar"]
