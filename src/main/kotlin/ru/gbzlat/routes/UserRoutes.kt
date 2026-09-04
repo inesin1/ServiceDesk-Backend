@@ -7,6 +7,8 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.utils.io.*
+import kotlinx.io.readByteArray
 import org.ktorm.dsl.*
 import org.ktorm.entity.*
 import ru.gbzlat.database
@@ -155,7 +157,7 @@ fun Route.userRoute() {
             }
         }
         get ("/checklogin/{login}") {
-            if (database.users.find { it.login eq call.parameters["login"]!!.toString() } == null)
+            if (database.users.find { it.login eq call.parameters["login"]!! } == null)
                 call.respond("ok")
             else
                 call.respond("err")
@@ -202,11 +204,11 @@ fun Route.userRoute() {
                                 "users_upload_${LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)}_rw"
                             else
                                 "users_upload_${LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)}"
-                        val fileBytes = part.streamProvider().readBytes()
+                        val fileBytes = part.provider().readRemaining().readByteArray()
                         file = File("uploads/${fileName}")
                         file.writeBytes(fileBytes)
                     }
-                    part.dispose()
+                    part.release()
                 }
 
                 if (rewrite) {
