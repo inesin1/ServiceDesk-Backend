@@ -1,12 +1,10 @@
 package ru.gbzlat.database.models
 
-import kotlinx.serialization.Serializable
 import org.ktorm.database.Database
 import org.ktorm.entity.Entity
 import org.ktorm.entity.sequenceOf
 import org.ktorm.schema.*
 import ru.gbzlat.database
-import ru.gbzlat.plugins.LocalDateTimeSerializer
 import java.time.LocalDateTime
 
 interface TicketComment : Entity<TicketComment> {
@@ -16,7 +14,6 @@ interface TicketComment : Entity<TicketComment> {
     var ticketId: Int
     var creator: User
     var text: String
-    @Serializable(with = LocalDateTimeSerializer::class)
     var createdAt: LocalDateTime
 }
 
@@ -36,7 +33,6 @@ data class Comment (
     val ticketId: Int,
     val userId: Int,
     val text: String,
-    @Serializable(with = LocalDateTimeSerializer::class)
     val createDate: LocalDateTime
 )
 
