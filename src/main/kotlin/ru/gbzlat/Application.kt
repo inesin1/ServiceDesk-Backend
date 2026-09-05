@@ -3,17 +3,15 @@ package ru.gbzlat
 import com.github.kotlintelegrambot.Bot
 import io.ktor.server.application.*
 import io.ktor.server.netty.*
-import org.ktorm.database.Database
-import ru.gbzlat.plugins.configureDatabase
+import ru.gbzlat.db.connectDatabase
 import ru.gbzlat.plugins.*
 
-lateinit var database: Database
-lateinit var tgbot: Bot
+var tgbot: Bot? = null
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 fun Application.module() {
-    configureDatabase(environment)
+    connectDatabase(environment.config)
     configureCors()
     configureAuthentication()
     configureRouting()
