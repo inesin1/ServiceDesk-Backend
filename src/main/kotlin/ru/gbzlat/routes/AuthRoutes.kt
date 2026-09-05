@@ -1,40 +1,31 @@
 package ru.gbzlat.routes
 
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.ktorm.dsl.eq
-import org.ktorm.entity.find
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import ru.gbzlat.authentication.Authentication
-import ru.gbzlat.database
-import ru.gbzlat.database.models.Users.users
+import ru.gbzlat.db.Users
+import ru.gbzlat.db.loadUsers
 import ru.gbzlat.dto.AuthRequest
 import ru.gbzlat.dto.AuthResponse
-import ru.gbzlat.plugins.objectMapper
 
 fun Route.authRoute() {
-    post ("/auth") {
-        try {
-            val authData = call.receive<AuthRequest>()
-            val user = database.users.find { it.login eq authData.login }
+    post("/auth") {
+        val body = call.receive<AuthRequest>()
 
-            if (user == null) {
-                call.respond("Неверный логин или пароль. Попробуйте еще раз!")
-            }
+        val user = transaction {
+            val id = Users.select(Users.id)
+                .where { (Users.login eq body.login) and (Users.password eq body.password) }
+                .singleOrNull()?.get(Users.id)
 
-            val token = Authentication.instance.createAccessToken(user!!.id)
-            call.respond(
-                objectMapper.writeValueAsString(
-                    AuthResponse(
-                        user,
-                        token
-                    )
-                )
-            )
-        } catch (e: Exception) {
-            println("Произошла ошибка: ${e.message}")
-            call.respond("Произошла ошибка: ${e.message}")
-        }
+            id?.let { loadUsers(listOf(it), withDepartments = true)[it] }
+        } ?: return@post call.respond(HttpStatusCode.Unauthorized, "Неверный логин или пароль")
+
+        call.respond(AuthResponse(user, Authentication.instance.createAccessToken(user.id)))
     }
 }
