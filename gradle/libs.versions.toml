@@ -3,8 +3,10 @@ kotlin = "2.4.10"
 ktor = "3.5.2"
 logback = "1.6.3"
 jackson = "2.22.2"
-ktorm = "3.6.0"
-mysql = "8.0.33"
+exposed = "1.5.0"
+postgres = "42.7.13"
+hikari = "7.1.0"
+flyway = "13.5.0"
 telegram = "6.1.0"
 
 [libraries]
@@ -21,10 +23,13 @@ ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref 
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
 
-ktorm-core = { module = "org.ktorm:ktorm-core", version.ref = "ktorm" }
-ktorm-jackson = { module = "org.ktorm:ktorm-jackson", version.ref = "ktorm" }
-ktorm-support-mysql = { module = "org.ktorm:ktorm-support-mysql", version.ref = "ktorm" }
-mysql-connector = { module = "com.mysql:mysql-connector-j", version.ref = "mysql" }
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+exposed-java-time = { module = "org.jetbrains.exposed:exposed-java-time", version.ref = "exposed" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgres" }
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 telegram-bot = { module = "io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram", version.ref = "telegram" }

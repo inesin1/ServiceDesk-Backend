@@ -42,10 +42,13 @@ dependencies {
     implementation(libs.jackson.datatype.jsr310)
 
     // database
-    implementation(libs.ktorm.core)
-    implementation(libs.ktorm.jackson)
-    implementation(libs.ktorm.support.mysql)
-    runtimeOnly(libs.mysql.connector)
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.exposed.java.time)
+    implementation(libs.hikaricp)
+    implementation(libs.flyway.core)
+    runtimeOnly(libs.flyway.postgresql)
+    runtimeOnly(libs.postgresql)
 
     // telegram
     implementation(libs.telegram.bot)
