@@ -9,442 +9,231 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.*
 import kotlinx.io.readByteArray
-import org.ktorm.dsl.*
-import org.ktorm.entity.*
-import ru.gbzlat.database
-import ru.gbzlat.database.models.*
-import ru.gbzlat.database.models.Roles.roles
-import ru.gbzlat.database.models.Users.users
-import ru.gbzlat.dto.SimpleData
-import ru.gbzlat.dto.UserDTO
+import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.jdbc.*
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import ru.gbzlat.authentication.UserPrincipal
-import ru.gbzlat.database.models.UserDepartments.userDepartments
-import ru.gbzlat.plugins.objectMapper
+import ru.gbzlat.db.*
+import ru.gbzlat.dto.UserDTO
 import java.io.File
 import java.time.LocalDateTime
-import java.time.ZoneOffset
+
+private const val ROLE_EMPLOYEE = 1
+
+private fun ApplicationCall.wantsDepartments() =
+    request.queryParameters["with"]?.split(",")?.contains("departments") == true
 
 fun Route.userRoute() {
-    route ("/users") {
+    route("/users") {
         get {
-            try {
-                val offset = call.request.queryParameters["offset"]?.toInt()
-                val limit = call.request.queryParameters["limit"]?.toInt()
-                val with = call.request.queryParameters["with"]?.split(",")
+            val withDepartments = call.wantsDepartments()
+            val offset = call.request.queryParameters["offset"]?.toLong() ?: 0
+            val limit = call.request.queryParameters["limit"]?.toInt() ?: 1000
 
-                val users = database.users
-                    .drop(offset?:0)
-                    .take(limit?:1000)
-                    .toList()
-
-                with?.map {
-                    when (it) {
-                        "departments" -> {
-                            users.map {user ->
-                                user.addDepartments()
-                            }
-                        }
-
-                        else -> {}
-                    }
-                }
-
-                call.respond(
-                    objectMapper.writeValueAsString(
-                        users
-                    )
-                )
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
-            }
-        }
-        route ("/{id}") {
-            get {
-                try {
-                    val id = call.parameters["id"]!!.toInt()
-                    val user = database.users.find { it.id eq id }
-
-                    if (user == null) {
-                        call.respond(HttpStatusCode.NotFound)
-                    }
-
-                    val with = call.request.queryParameters["with"]?.split(",")
-                    with?.map {
-                        when (it) {
-                            "departments" -> {
-                                user!!.addDepartments()
-                            }
-
-                            else -> {}
-                        }
-                    }
-
-                    call.respond(
-                        objectMapper.writeValueAsString(
-                            user
-                        )
-                    )
-                } catch (e: Exception) {
-                    println("Произошла ошибка: ${e.message}")
-                    call.respond("Произошла ошибка: ${e.message}")
-                }
+            val users = transaction {
+                val ids = Users.select(Users.id).orderBy(Users.id).limit(limit).offset(offset)
+                    .map { it[Users.id] }
+                loadUsers(ids, withDepartments).values.sortedBy { it.id }
             }
 
-            userDepartmentsRoute()
+            call.respond(users)
         }
-        get ("/current") {
-            try {
-                val userId = call.principal<UserPrincipal>()!!.id
-                val currentUser = database.users.find {
-                    it.id eq userId
-                }
+        get("/current") {
+            val userId = call.principal<UserPrincipal>()!!.id
+            val user = transaction { loadUsers(listOf(userId), call.wantsDepartments())[userId] }
+                ?: return@get call.respond(HttpStatusCode.NotFound)
 
-                if (currentUser == null) {
-                    call.respond(HttpStatusCode.NotFound)
-                }
-
-                val with = call.request.queryParameters["with"]?.split(",")
-                with?.map {
-                    when (it) {
-                        "departments" -> {
-                            currentUser!!.addDepartments()
-                        }
-
-                        else -> {}
-                    }
-                }
-
-                call.respond(
-                    objectMapper.writeValueAsString(
-                        currentUser
-                    )
-                )
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
+            call.respond(user)
+        }
+        get("/specialists") {
+            val withDepartments = call.wantsDepartments()
+            val users = transaction {
+                val ids = Users.select(Users.id).where { Users.roleId neq ROLE_EMPLOYEE }
+                    .map { it[Users.id] }
+                loadUsers(ids, withDepartments).values.sortedBy { it.id }
             }
+
+            call.respond(users)
         }
-        get ("/specialists") {
-            try {
-                val users = database.users
-                    .filter {
-                        (it.roleId eq 2) or (it.roleId eq 3)
-                    }
-                    .toList()
+        get("/checklogin/{login}") {
+            val login = call.parameters["login"]!!
+            val taken = transaction { Users.selectAll().where { Users.login eq login }.any() }
 
-                val with = call.request.queryParameters["with"]?.split(",")
-                with?.map {
-                    when (it) {
-                        "departments" -> {
-                            users.map {user ->
-                                user.addDepartments()
-                            }
-                        }
-
-                        else -> {}
-                    }
-                }
-
-                call.respond(
-                    objectMapper.writeValueAsString(
-                        users
-                    )
-                )
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
-            }
-        }
-        get ("/checklogin/{login}") {
-            if (database.users.find { it.login eq call.parameters["login"]!! } == null)
-                call.respond("ok")
-            else
-                call.respond("err")
+            call.respond(mapOf("available" to !taken))
         }
         post {
-            try {
-                val userData = call.receive<UserDTO>()
+            val body = call.receive<UserDTO>()
 
-                database.useTransaction {
-                    val createdId = database.insertAndGenerateKey(Users) {
-                        set(it.name, userData.name)
-                        set(it.login, userData.login)
-                        set(it.password, userData.password)
-                        set(it.roleId, userData.roleId)
-                        set(it.phone, userData.phone)
-                        set(it.tgChatId, userData.tgChatId)
-                    }
-                    userData.departmentIds.map {departmentId ->
-                        database.insert(UserDepartments) {
-                            set(it.userId, createdId as Int)
-                            set(it.departmentId, departmentId)
-                        }
-                    }
-                }
+            val id = transaction {
+                val newId = Users.insert {
+                    it[name] = body.name
+                    it[login] = body.login
+                    it[password] = body.password
+                    it[roleId] = body.roleId
+                    it[phone] = body.phone
+                    it[tgChatId] = body.tgChatId
+                } get Users.id
 
-                call.respond(HttpStatusCode.Created)
-            } catch (e: Exception){
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
+                setDepartments(newId, body.departmentIds)
+                newId
             }
+
+            call.respond(HttpStatusCode.Created, transaction { loadUsers(listOf(id), true).getValue(id) })
         }
         post("/upload") {
-            try {
-                val rewrite = call.request.queryParameters["rewrite"] == "true"
+            val rewrite = call.request.queryParameters["rewrite"] == "true"
+            val file = receiveUpload() ?: return@post call.respond(HttpStatusCode.BadRequest)
 
-                val multipartData = call.receiveMultipart()
-                lateinit var fileName: String
-                lateinit var file: File
-
-                multipartData.forEachPart { part ->
-                    if (part is PartData.FileItem) {
-                        fileName =
-                            if (rewrite)
-                                "users_upload_${LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)}_rw"
-                            else
-                                "users_upload_${LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)}"
-                        val fileBytes = part.provider().readRemaining().readByteArray()
-                        file = File("uploads/${fileName}")
-                        file.writeBytes(fileBytes)
-                    }
-                    part.release()
-                }
-
+            val imported = transaction {
                 if (rewrite) {
-                    File("backup/users_${LocalDateTime.now()}")
-                        .writeText(
-                            objectMapper.writeValueAsString(
-                                database.users.toList()
-                            )
-                        )
-                    database.deleteAll(Users)
+                    File("backup").mkdirs()
+                    File("backup/users_${LocalDateTime.now()}.tsv")
+                        .writeText(Users.selectAll().joinToString("\n") { row ->
+                            listOf(
+                                row[Users.name], row[Users.login], row[Users.password],
+                                row[Users.roleId], row[Users.phone].orEmpty(), row[Users.tgChatId] ?: ""
+                            ).joinToString("\t")
+                        })
+                    UserDepartments.deleteAll()
+                    Users.deleteAll()
                 }
 
-                file.forEachLine {line ->
-                    try {
-                        val userArray = line.split('\t')
-                        val user = User {
-                            name = userArray[0]
-                            login = userArray[1]
-                            password = userArray[2]
-                            role = database.roles.find { it.id eq userArray[3].toInt() }!!
-                            phone = userArray[5]
-                            tgChatId = userArray[6].toLong()
-                        }
-
-                        if (database.users.find { it.login eq userArray[1] } == null) {
-                            database.users.add(user)
-                        } else {
-                            database.update(Users) {
-                                set(it.name, user.name)
-                                set(it.password, user.password)
-                                set(it.roleId, user.role.id)
-                                set(it.phone, user.phone)
-                                set(it.tgChatId, user.tgChatId)
-                                where {
-                                    it.login eq user.login
-                                }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        println("Ошибка при добавлении пользователя: ${e.message}")
-                    }
-                }
-
-                call.respond(HttpStatusCode.Created)
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
+                file.readLines().count { importUserLine(it) }
             }
+
+            call.respond(HttpStatusCode.Created, mapOf("imported" to imported))
         }
-        put("/{id}") {
-            try {
-                val userData = call.receive<UserDTO>()
-                val userId = call.parameters["id"]!!.toInt()
-                val user = User {
-                    id = userId
-                    name = userData.name
-                    login = userData.login
-                    password = userData.password
-                    role = database.roles.find { it.id eq userData.roleId }!!
-                    phone = userData.phone
-                    tgChatId = userData.tgChatId
-                }
+        route("/{id}") {
+            get {
+                val id = call.parameters["id"]!!.toInt()
+                val user = transaction { loadUsers(listOf(id), call.wantsDepartments())[id] }
+                    ?: return@get call.respond(HttpStatusCode.NotFound)
 
-                database.useTransaction {
-                    database.delete(UserDepartments) {
-                        it.userId eq userId
-                    }
-
-                    userData.departmentIds.map {departmentId ->
-                        database.insert(UserDepartments) {
-                            set(it.userId, userId)
-                            set(it.departmentId, departmentId)
-                        }
-                    }
-
-                    database.users.update(user)
-                }
-
-                call.respond(userId)
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
+                call.respond(user)
             }
-        }
-        delete("/{id}") {
-            try {
+            put {
+                val id = call.parameters["id"]!!.toInt()
+                val body = call.receive<UserDTO>()
+
+                val updated = transaction {
+                    val rows = Users.update({ Users.id eq id }) {
+                        it[name] = body.name
+                        it[login] = body.login
+                        it[password] = body.password
+                        it[roleId] = body.roleId
+                        it[phone] = body.phone
+                        it[tgChatId] = body.tgChatId
+                    }
+                    if (rows > 0) setDepartments(id, body.departmentIds)
+                    rows
+                }
+
+                if (updated == 0) return@put call.respond(HttpStatusCode.NotFound)
+                call.respond(transaction { loadUsers(listOf(id), true).getValue(id) })
+            }
+            delete {
                 val id = call.parameters["id"]!!.toInt()
 
-                database.useTransaction {
-                    database.delete(UserDepartments) {
-                        it.userId eq id
-                    }
-
-                    database.delete(Users) {
-                        it.id eq id
-                    }
+                val deleted = transaction {
+                    UserDepartments.deleteWhere { userId eq id }
+                    Users.deleteWhere { Users.id eq id }
                 }
 
-                call.respond(id)
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
+                if (deleted == 0) return@delete call.respond(HttpStatusCode.NotFound)
+                call.respond(HttpStatusCode.NoContent)
             }
+            userDepartmentsRoute()
         }
 
-        roleRoute()
+        refRoutes("/roles", Roles)
     }
 }
 
-// /users/roles
-fun Route.roleRoute() {
-    route("/roles"){
-        get {
-            try {
-                call.respond(
-                    objectMapper.writeValueAsString(
-                        database.roles.toList()
-                    )
-                )
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
-            }
+private fun setDepartments(userId: Int, departmentIds: List<Int>) {
+    UserDepartments.deleteWhere { UserDepartments.userId eq userId }
+    UserDepartments.batchInsert(departmentIds) { departmentId ->
+        this[UserDepartments.userId] = userId
+        this[UserDepartments.departmentId] = departmentId
+    }
+}
+
+/** Tab-separated: name, login, password, roleId, (unused), phone, tgChatId. */
+private fun importUserLine(line: String): Boolean {
+    val cells = line.split('\t')
+    if (cells.size < 7) return false
+
+    val login = cells[1]
+    val chatId = cells[6].toLongOrNull()
+    val role = cells[3].toIntOrNull() ?: return false
+
+    val existing = Users.select(Users.id).where { Users.login eq login }.singleOrNull()
+    if (existing == null) {
+        Users.insert {
+            it[name] = cells[0]
+            it[Users.login] = login
+            it[password] = cells[2]
+            it[roleId] = role
+            it[phone] = cells[5]
+            it[tgChatId] = chatId
         }
-        get("/{id}") {
-            try {
-                val role = database.roles.find {
-                    it.id eq call.parameters["id"]!!.toInt()
-                }
-
-                if (role == null) {
-                    call.respond(HttpStatusCode.NotFound)
-                }
-
-                call.respond(
-                    objectMapper.writeValueAsString(
-                        role!!
-                    )
-                )
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
-            }
-        }
-        post {
-            try {
-                val roleData = call.receive<SimpleData>()
-
-                database.roles.add(Role {
-                    name = roleData.name
-                })
-
-                call.respond(HttpStatusCode.Created)
-            } catch (e: Exception){
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
-            }
-        }
-        delete("/{id}") {
-            try {
-                val id = call.parameters["id"]!!.toInt()
-
-                database.delete(Roles) {
-                    it.id eq id
-                }
-
-                call.respond(id)
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
-            }
+    } else {
+        Users.update({ Users.login eq login }) {
+            it[name] = cells[0]
+            it[password] = cells[2]
+            it[roleId] = role
+            it[phone] = cells[5]
+            it[tgChatId] = chatId
         }
     }
+    return true
+}
+
+private suspend fun RoutingContext.receiveUpload(): File? {
+    var file: File? = null
+
+    call.receiveMultipart().forEachPart { part ->
+        if (part is PartData.FileItem) {
+            File("uploads").mkdirs()
+            file = File("uploads/users_${System.currentTimeMillis()}.tsv")
+                .apply { writeBytes(part.provider().readRemaining().readByteArray()) }
+        }
+        part.release()
+    }
+
+    return file
 }
 
 // /users/{id}/departments
 fun Route.userDepartmentsRoute() {
     route("/departments") {
         get {
-            try {
-                val userId = call.parameters["id"]!!.toInt()
-
-                val departments = database.userDepartments
-                    .filter { it.userId eq userId }
-                    .map { it.department }
-
-                call.respond(
-                    objectMapper.writeValueAsString(
-                        departments
-                    )
-                )
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
-            }
+            val userId = call.parameters["id"]!!.toInt()
+            call.respond(transaction { departmentsByUser(listOf(userId))[userId].orEmpty() })
         }
-
         post {
-            try {
-                val userId = call.parameters["id"]!!.toInt()
-                val departmentIds = call.receive<List<Int>>()
+            val userId = call.parameters["id"]!!.toInt()
+            val departmentIds = call.receive<List<Int>>()
 
-                database.useTransaction {
-                    departmentIds.map { departmentId ->
-                        database.insert(UserDepartments) {
-                            set(it.userId, userId)
-                            set(it.departmentId, departmentId)
-                        }
-                    }
+            transaction {
+                UserDepartments.batchInsert(departmentIds, ignore = true) { departmentId ->
+                    this[UserDepartments.userId] = userId
+                    this[UserDepartments.departmentId] = departmentId
                 }
-
-                call.respond(HttpStatusCode.Created)
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
             }
+
+            call.respond(HttpStatusCode.Created)
         }
-
         delete {
-            try {
-                val userId = call.parameters["id"]!!.toInt()
-                val departmentIds = call.receive<List<Int>>()
+            val userId = call.parameters["id"]!!.toInt()
+            val departmentIds = call.receive<List<Int>>()
 
-                database.useTransaction {
-                    departmentIds.map { departmentId ->
-                        database.delete(UserDepartments) {
-                            (it.userId eq userId) and (it.departmentId eq departmentId)
-                        }
-                    }
+            transaction {
+                UserDepartments.deleteWhere {
+                    (UserDepartments.userId eq userId) and (departmentId inList departmentIds)
                 }
-
-                call.respond(departmentIds)
-            } catch (e: Exception) {
-                println("Произошла ошибка: ${e.message}")
-                call.respond("Произошла ошибка: ${e.message}")
             }
+
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }
