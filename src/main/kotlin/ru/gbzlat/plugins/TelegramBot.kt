@@ -6,8 +6,13 @@ import ru.gbzlat.tgbot
 import ru.gbzlat.tgbot.TelegramBotFactory
 
 fun Application.configureTelegramBot(env: ApplicationEnvironment) {
-    tgbot = TelegramBotFactory.connectBot(env.config.property("tgbot.token").getString())
-    tgbot.startPolling()
+    val token = env.config.propertyOrNull("tgbot.token")?.getString()
+    if (token.isNullOrBlank()) {
+        log.info("tgbot.token is not set, Telegram notifications are disabled")
+        return
+    }
+
+    tgbot = TelegramBotFactory.connectBot(token).also { it.startPolling() }
 }
 
 fun generateUsersButton(): List<List<KeyboardButton>> {
