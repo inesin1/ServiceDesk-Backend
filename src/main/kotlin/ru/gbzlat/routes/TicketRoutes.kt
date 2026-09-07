@@ -13,7 +13,9 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import ru.gbzlat.authentication.Role
 import ru.gbzlat.authentication.UserPrincipal
+import ru.gbzlat.authentication.requireRole
 import ru.gbzlat.db.*
 import ru.gbzlat.dto.TicketCommentDTO
 import ru.gbzlat.dto.TicketDTO
@@ -26,8 +28,6 @@ private val zone: ZoneId = ZoneId.of("GMT+5")
 private const val STATUS_NEW = 1
 private const val STATUS_CLOSED = 2
 private const val STATUS_IN_WORK = 3
-
-private const val ROLE_EMPLOYEE = 1
 
 private fun ids(raw: String?): List<Int>? =
     raw?.takeIf { it.isNotBlank() }?.split(",")?.map { it.trim().toInt() }
@@ -44,7 +44,7 @@ fun Route.ticketRoute() {
 
                 var where: Op<Boolean> = Op.TRUE
                 // Employees only ever see their own tickets.
-                if (role == ROLE_EMPLOYEE) where = where and (Tickets.creatorId eq userId)
+                if (role == Role.EMPLOYEE.id) where = where and (Tickets.creatorId eq userId)
                 ids(params["statuses"])?.let { where = where and (Tickets.statusId inList it) }
                 ids(params["categories"])?.let { where = where and (Tickets.categoryId inList it) }
                 ids(params["creators"])?.let { where = where and (Tickets.creatorId inList it) }
@@ -74,11 +74,13 @@ fun Route.ticketRoute() {
             call.respond(transaction { Tickets.selectAll().count() })
         }
         post {
+            val principal = call.principal<UserPrincipal>()!!
             val body = call.receive<TicketDTO>()
+            val creator = if (principal.role == Role.ADMIN) body.creatorId else principal.id
 
             val creatorName = transaction {
                 Tickets.insert {
-                    it[creatorId] = body.creatorId
+                    it[creatorId] = creator
                     it[sourceId] = body.sourceId
                     it[categoryId] = body.categoryId
                     it[statusId] = STATUS_NEW
@@ -87,7 +89,7 @@ fun Route.ticketRoute() {
                     it[timeLimit] = LocalDateTime.now(zone).plusDays(1)
                 }
 
-                Users.select(Users.name).where { Users.id eq body.creatorId }.single()[Users.name]
+                Users.select(Users.name).where { Users.id eq creator }.single()[Users.name]
             }
 
             notifySpecialists(body, creatorName)
@@ -102,6 +104,7 @@ fun Route.ticketRoute() {
 
                 call.respond(ticket)
             }
+            requireRole(Role.SPECIALIST, Role.ADMIN) {
             put("/work/{executorId}") {
                 val ticketId = call.parameters["id"]!!.toInt()
                 val executor = call.parameters["executorId"]!!.toInt()
@@ -129,6 +132,7 @@ fun Route.ticketRoute() {
                 if (updated == 0) return@put call.respond(HttpStatusCode.NotFound)
                 call.respond(HttpStatusCode.NoContent)
             }
+            }
 
             ticketCommentRoute()
         }
@@ -144,7 +148,7 @@ private fun notifySpecialists(ticket: TicketDTO, creatorName: String) {
         val category = TicketCategories.findRef(ticket.categoryId)?.name
         val chats = Users
             .select(Users.tgChatId)
-            .where { (Users.roleId neq ROLE_EMPLOYEE) and Users.tgChatId.isNotNull() }
+            .where { (Users.roleId neq Role.EMPLOYEE.id) and Users.tgChatId.isNotNull() }
             .mapNotNull { it[Users.tgChatId] }
         category to chats
     }
@@ -179,11 +183,12 @@ fun Route.ticketCommentRoute() {
         post {
             val ticketId = call.parameters["id"]!!.toInt()
             val body = call.receive<TicketCommentDTO>()
+            val author = call.principal<UserPrincipal>()!!.id
 
             transaction {
                 TicketComments.insert {
                     it[TicketComments.ticketId] = ticketId
-                    it[creatorId] = body.creatorId
+                    it[creatorId] = author
                     it[text] = body.text
                     it[createdAt] = LocalDateTime.now(zone)
                 }

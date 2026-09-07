@@ -12,13 +12,15 @@ import kotlinx.io.readByteArray
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import ru.gbzlat.authentication.Role
 import ru.gbzlat.authentication.UserPrincipal
+import ru.gbzlat.authentication.hashIfPlaintext
+import ru.gbzlat.authentication.hashPassword
+import ru.gbzlat.authentication.requireRole
 import ru.gbzlat.db.*
 import ru.gbzlat.dto.UserDTO
 import java.io.File
 import java.time.LocalDateTime
-
-private const val ROLE_EMPLOYEE = 1
 
 private fun ApplicationCall.wantsDepartments() =
     request.queryParameters["with"]?.split(",")?.contains("departments") == true
@@ -48,7 +50,7 @@ fun Route.userRoute() {
         get("/specialists") {
             val withDepartments = call.wantsDepartments()
             val users = transaction {
-                val ids = Users.select(Users.id).where { Users.roleId neq ROLE_EMPLOYEE }
+                val ids = Users.select(Users.id).where { Users.roleId neq Role.EMPLOYEE.id }
                     .map { it[Users.id] }
                 loadUsers(ids, withDepartments).values.sortedBy { it.id }
             }
@@ -61,47 +63,49 @@ fun Route.userRoute() {
 
             call.respond(mapOf("available" to !taken))
         }
-        post {
-            val body = call.receive<UserDTO>()
+        requireRole(Role.ADMIN) {
+            post {
+                val body = call.receive<UserDTO>()
 
-            val id = transaction {
-                val newId = Users.insert {
-                    it[name] = body.name
-                    it[login] = body.login
-                    it[password] = body.password
-                    it[roleId] = body.roleId
-                    it[phone] = body.phone
-                    it[tgChatId] = body.tgChatId
-                } get Users.id
+                val id = transaction {
+                    val newId = Users.insert {
+                        it[name] = body.name
+                        it[login] = body.login
+                        it[password] = hashPassword(body.password)
+                        it[roleId] = body.roleId
+                        it[phone] = body.phone
+                        it[tgChatId] = body.tgChatId
+                    } get Users.id
 
-                setDepartments(newId, body.departmentIds)
-                newId
-            }
-
-            call.respond(HttpStatusCode.Created, transaction { loadUsers(listOf(id), true).getValue(id) })
-        }
-        post("/upload") {
-            val rewrite = call.request.queryParameters["rewrite"] == "true"
-            val file = receiveUpload() ?: return@post call.respond(HttpStatusCode.BadRequest)
-
-            val imported = transaction {
-                if (rewrite) {
-                    File("backup").mkdirs()
-                    File("backup/users_${LocalDateTime.now()}.tsv")
-                        .writeText(Users.selectAll().joinToString("\n") { row ->
-                            listOf(
-                                row[Users.name], row[Users.login], row[Users.password],
-                                row[Users.roleId], row[Users.phone].orEmpty(), row[Users.tgChatId] ?: ""
-                            ).joinToString("\t")
-                        })
-                    UserDepartments.deleteAll()
-                    Users.deleteAll()
+                    setDepartments(newId, body.departmentIds)
+                    newId
                 }
 
-                file.readLines().count { importUserLine(it) }
+                call.respond(HttpStatusCode.Created, transaction { loadUsers(listOf(id), true).getValue(id) })
             }
+            post("/upload") {
+                val rewrite = call.request.queryParameters["rewrite"] == "true"
+                val file = receiveUpload() ?: return@post call.respond(HttpStatusCode.BadRequest)
 
-            call.respond(HttpStatusCode.Created, mapOf("imported" to imported))
+                val imported = transaction {
+                    if (rewrite) {
+                        File("backup").mkdirs()
+                        File("backup/users_${LocalDateTime.now()}.tsv")
+                            .writeText(Users.selectAll().joinToString("\n") { row ->
+                                listOf(
+                                    row[Users.name], row[Users.login], row[Users.password],
+                                    row[Users.roleId], row[Users.phone].orEmpty(), row[Users.tgChatId] ?: ""
+                                ).joinToString("\t")
+                            })
+                        UserDepartments.deleteAll()
+                        Users.deleteAll()
+                    }
+
+                    file.readLines().count { importUserLine(it) }
+                }
+
+                call.respond(HttpStatusCode.Created, mapOf("imported" to imported))
+            }
         }
         route("/{id}") {
             get {
@@ -113,18 +117,24 @@ fun Route.userRoute() {
             }
             put {
                 val id = call.parameters["id"]!!.toInt()
+                val principal = call.principal<UserPrincipal>()!!
+                if (principal.role != Role.ADMIN && principal.id != id) {
+                    return@put call.respond(HttpStatusCode.Forbidden)
+                }
+
                 val body = call.receive<UserDTO>()
+                val isAdmin = principal.role == Role.ADMIN
 
                 val updated = transaction {
                     val rows = Users.update({ Users.id eq id }) {
                         it[name] = body.name
                         it[login] = body.login
-                        it[password] = body.password
-                        it[roleId] = body.roleId
+                        it[password] = hashPassword(body.password)
                         it[phone] = body.phone
                         it[tgChatId] = body.tgChatId
+                        if (isAdmin) it[roleId] = body.roleId
                     }
-                    if (rows > 0) setDepartments(id, body.departmentIds)
+                    if (rows > 0 && isAdmin) setDepartments(id, body.departmentIds)
                     rows
                 }
 
@@ -132,6 +142,9 @@ fun Route.userRoute() {
                 call.respond(transaction { loadUsers(listOf(id), true).getValue(id) })
             }
             delete {
+                if (call.principal<UserPrincipal>()!!.role != Role.ADMIN) {
+                    return@delete call.respond(HttpStatusCode.Forbidden)
+                }
                 val id = call.parameters["id"]!!.toInt()
 
                 val deleted = transaction {
@@ -171,7 +184,7 @@ private fun importUserLine(line: String): Boolean {
         Users.insert {
             it[name] = cells[0]
             it[Users.login] = login
-            it[password] = cells[2]
+            it[password] = hashIfPlaintext(cells[2])
             it[roleId] = role
             it[phone] = cells[5]
             it[tgChatId] = chatId
@@ -179,7 +192,7 @@ private fun importUserLine(line: String): Boolean {
     } else {
         Users.update({ Users.login eq login }) {
             it[name] = cells[0]
-            it[password] = cells[2]
+            it[password] = hashIfPlaintext(cells[2])
             it[roleId] = role
             it[phone] = cells[5]
             it[tgChatId] = chatId
