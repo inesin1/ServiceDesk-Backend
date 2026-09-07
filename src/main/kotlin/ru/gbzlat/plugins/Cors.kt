@@ -5,8 +5,16 @@ import io.ktor.server.application.*
 import io.ktor.server.plugins.cors.routing.*
 
 fun Application.configureCors() {
-    install(CORS){
-        anyHost()
+    val allowedHosts = environment.config.property("cors.allowedHosts").getString()
+        .split(",")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+
+    install(CORS) {
+        allowedHosts.forEach { host ->
+            val (scheme, name) = host.split("://").let { it.first() to it.last() }
+            allowHost(name, schemes = listOf(scheme))
+        }
         allowCredentials = true
         allowHeader(HttpHeaders.Accept)
         allowHeader(HttpHeaders.Authorization)
