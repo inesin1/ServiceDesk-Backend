@@ -9,6 +9,8 @@ import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import ru.gbzlat.authentication.Authentication
+import ru.gbzlat.authentication.Role
+import ru.gbzlat.authentication.verifyPassword
 import ru.gbzlat.db.Users
 import ru.gbzlat.db.loadUsers
 import ru.gbzlat.dto.AuthRequest
@@ -19,13 +21,18 @@ fun Route.authRoute() {
         val body = call.receive<AuthRequest>()
 
         val user = transaction {
-            val id = Users.select(Users.id)
-                .where { (Users.login eq body.login) and (Users.password eq body.password) }
-                .singleOrNull()?.get(Users.id)
+            val row = Users.select(Users.id, Users.password)
+                .where { Users.login eq body.login }
+                .singleOrNull()
+                ?: return@transaction null
 
-            id?.let { loadUsers(listOf(it), withDepartments = true)[it] }
+            if (!verifyPassword(body.password, row[Users.password])) return@transaction null
+
+            val id = row[Users.id]
+            loadUsers(listOf(id), withDepartments = true)[id]
         } ?: return@post call.respond(HttpStatusCode.Unauthorized, "Неверный логин или пароль")
 
-        call.respond(AuthResponse(user, Authentication.instance.createAccessToken(user.id)))
+        val role = Role.byId(user.role.id)!!
+        call.respond(AuthResponse(user, Authentication.instance.createAccessToken(user.id, role)))
     }
 }
