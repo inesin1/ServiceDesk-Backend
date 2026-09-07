@@ -1,5 +1,6 @@
 package ru.gbzlat.plugins
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.serialization.jackson.*
@@ -12,6 +13,7 @@ fun Application.configureSerialization() {
             registerModule(JavaTimeModule())
             // ISO-8601 strings, not the numeric arrays Jackson defaults to for java.time.
             disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         }
     }
 }

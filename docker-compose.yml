@@ -20,6 +20,8 @@ services:
       DB_HOST: db
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      JWT_TTL_HOURS: ${JWT_TTL_HOURS:-12}
+      CORS_ALLOWED_HOSTS: ${CORS_ALLOWED_HOSTS:-http://localhost:10011}
       TGBOT_TOKEN: ${TGBOT_TOKEN:-}
     ports:
       - "1002:1002"
