@@ -1,4 +1,4 @@
-package ru.gbzlat.authentication
+package ru.gbzlat.security
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier

@@ -1,4 +1,4 @@
-package ru.gbzlat.authentication
+package ru.gbzlat.security
 
 data class UserPrincipal(
     val id: Int,

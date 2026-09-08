@@ -7,7 +7,12 @@ import com.github.kotlintelegrambot.dispatcher.command
 import com.github.kotlintelegrambot.dispatcher.text
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.KeyboardReplyMarkup
-import ru.gbzlat.plugins.generateUsersButton
+import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
+
+private fun menuKeyboard() = listOf(
+    listOf(KeyboardButton("Мой ChatId")),
+    listOf(KeyboardButton("Настройка бота")),
+)
 
 class TelegramBotFactory {
     companion object {
@@ -16,7 +21,7 @@ class TelegramBotFactory {
                 this.token = token
                 dispatch {
                     command("start") {
-                        val keyboardMarkup = KeyboardReplyMarkup(keyboard = generateUsersButton(), resizeKeyboard = true)
+                        val keyboardMarkup = KeyboardReplyMarkup(keyboard = menuKeyboard(), resizeKeyboard = true)
                         bot.sendMessage(
                             chatId = ChatId.fromId(message.chat.id),
                             text = "Привет, я бот Сервис Деск, буду оповещать вас о создании заявок!",

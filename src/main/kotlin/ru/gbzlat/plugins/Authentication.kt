@@ -2,18 +2,13 @@ package ru.gbzlat.plugins
 
 import io.ktor.server.application.*
 import io.ktor.server.auth.jwt.*
-import ru.gbzlat.authentication.Authentication
-import ru.gbzlat.authentication.Role
-import ru.gbzlat.authentication.UserPrincipal
+import ru.gbzlat.config.AppConfig
+import ru.gbzlat.security.Authentication
+import ru.gbzlat.security.Role
+import ru.gbzlat.security.UserPrincipal
 
-fun Application.configureAuthentication() {
-    val jwt = environment.config.config("jwt")
-    Authentication.initialize(
-        secret = jwt.property("secret").getString(),
-        issuer = jwt.property("issuer").getString(),
-        audience = jwt.property("audience").getString(),
-        ttlHours = jwt.property("ttlHours").getString().toLong(),
-    )
+fun Application.configureAuthentication(config: AppConfig.Jwt) {
+    Authentication.initialize(config.secret, config.issuer, config.audience, config.ttlHours)
 
     install(io.ktor.server.auth.Authentication) {
         jwt("auth-jwt") {

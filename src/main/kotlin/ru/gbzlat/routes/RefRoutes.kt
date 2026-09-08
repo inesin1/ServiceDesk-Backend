@@ -10,13 +10,14 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
-import ru.gbzlat.authentication.Role
-import ru.gbzlat.authentication.requireRole
+import ru.gbzlat.security.Role
+import ru.gbzlat.security.requireRole
 import ru.gbzlat.db.RefTable
 import ru.gbzlat.db.allRefs
 import ru.gbzlat.db.findRef
 import ru.gbzlat.dto.Ref
 import ru.gbzlat.dto.SimpleData
+import ru.gbzlat.error.notFound
 
 /**
  * CRUD over a reference table. Statuses, roles, categories, sources and departments
@@ -30,10 +31,7 @@ fun Route.refRoutes(path: String, table: RefTable) {
         }
         get("/{id}") {
             val id = call.parameters["id"]!!.toInt()
-            val ref = transaction { table.findRef(id) }
-                ?: return@get call.respond(HttpStatusCode.NotFound)
-
-            call.respond(ref)
+            call.respond(transaction { table.findRef(id) } ?: notFound("Запись №$id не найдена"))
         }
 
         requireRole(Role.ADMIN) {
@@ -51,14 +49,14 @@ fun Route.refRoutes(path: String, table: RefTable) {
                 val body = call.receive<SimpleData>()
                 val updated = transaction { table.update({ table.id eq id }) { it[name] = body.name } }
 
-                if (updated == 0) return@put call.respond(HttpStatusCode.NotFound)
+                if (updated == 0) notFound("Запись №$id не найдена")
                 call.respond(Ref(id, body.name))
             }
             delete("/{id}") {
                 val id = call.parameters["id"]!!.toInt()
                 val deleted = transaction { table.deleteWhere { table.id eq id } }
 
-                if (deleted == 0) return@delete call.respond(HttpStatusCode.NotFound)
+                if (deleted == 0) notFound("Запись №$id не найдена")
                 call.respond(HttpStatusCode.NoContent)
             }
         }

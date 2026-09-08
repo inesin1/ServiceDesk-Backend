@@ -4,12 +4,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.cors.routing.*
 
-fun Application.configureCors() {
-    val allowedHosts = environment.config.property("cors.allowedHosts").getString()
-        .split(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-
+fun Application.configureCors(allowedHosts: List<String>) {
     install(CORS) {
         allowedHosts.forEach { host ->
             val (scheme, name) = host.split("://").let { it.first() to it.last() }
