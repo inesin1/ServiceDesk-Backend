@@ -9,18 +9,14 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.*
 import kotlinx.io.readByteArray
-import org.jetbrains.exposed.v1.core.*
-import org.jetbrains.exposed.v1.jdbc.*
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import ru.gbzlat.authentication.Role
-import ru.gbzlat.authentication.UserPrincipal
-import ru.gbzlat.authentication.hashIfPlaintext
-import ru.gbzlat.authentication.hashPassword
-import ru.gbzlat.authentication.requireRole
-import ru.gbzlat.db.*
+import ru.gbzlat.db.Roles
 import ru.gbzlat.dto.UserDTO
+import ru.gbzlat.error.badRequest
+import ru.gbzlat.security.Role
+import ru.gbzlat.security.UserPrincipal
+import ru.gbzlat.security.requireRole
+import ru.gbzlat.service.UserService
 import java.io.File
-import java.time.LocalDateTime
 
 private fun ApplicationCall.wantsDepartments() =
     request.queryParameters["with"]?.split(",")?.contains("departments") == true
@@ -28,131 +24,57 @@ private fun ApplicationCall.wantsDepartments() =
 fun Route.userRoute() {
     route("/users") {
         get {
-            val withDepartments = call.wantsDepartments()
-            val offset = call.request.queryParameters["offset"]?.toLong() ?: 0
-            val limit = call.request.queryParameters["limit"]?.toInt() ?: 1000
-
-            val users = transaction {
-                val ids = Users.select(Users.id).orderBy(Users.id).limit(limit).offset(offset)
-                    .map { it[Users.id] }
-                loadUsers(ids, withDepartments).values.sortedBy { it.id }
-            }
-
-            call.respond(users)
+            call.respond(
+                UserService.list(
+                    limit = call.request.queryParameters["limit"]?.toInt() ?: 1000,
+                    offset = call.request.queryParameters["offset"]?.toLong() ?: 0,
+                    withDepartments = call.wantsDepartments(),
+                )
+            )
         }
         get("/current") {
             val userId = call.principal<UserPrincipal>()!!.id
-            val user = transaction { loadUsers(listOf(userId), call.wantsDepartments())[userId] }
-                ?: return@get call.respond(HttpStatusCode.NotFound)
-
-            call.respond(user)
+            call.respond(UserService.byId(userId, call.wantsDepartments()))
         }
         get("/specialists") {
-            val withDepartments = call.wantsDepartments()
-            val users = transaction {
-                val ids = Users.select(Users.id).where { Users.roleId neq Role.EMPLOYEE.id }
-                    .map { it[Users.id] }
-                loadUsers(ids, withDepartments).values.sortedBy { it.id }
-            }
-
-            call.respond(users)
+            call.respond(UserService.specialists(call.wantsDepartments()))
         }
         get("/checklogin/{login}") {
-            val login = call.parameters["login"]!!
-            val taken = transaction { Users.selectAll().where { Users.login eq login }.any() }
-
+            val taken = UserService.isLoginTaken(call.parameters["login"]!!)
             call.respond(mapOf("available" to !taken))
         }
         requireRole(Role.ADMIN) {
             post {
-                val body = call.receive<UserDTO>()
-
-                val id = transaction {
-                    val newId = Users.insert {
-                        it[name] = body.name
-                        it[login] = body.login
-                        it[password] = hashPassword(body.password)
-                        it[roleId] = body.roleId
-                        it[phone] = body.phone
-                        it[tgChatId] = body.tgChatId
-                    } get Users.id
-
-                    setDepartments(newId, body.departmentIds)
-                    newId
-                }
-
-                call.respond(HttpStatusCode.Created, transaction { loadUsers(listOf(id), true).getValue(id) })
+                call.respond(HttpStatusCode.Created, UserService.create(call.receive<UserDTO>()))
             }
             post("/upload") {
                 val rewrite = call.request.queryParameters["rewrite"] == "true"
-                val file = receiveUpload() ?: return@post call.respond(HttpStatusCode.BadRequest)
+                val file = receiveUpload() ?: badRequest("Файл не приложен")
 
-                val imported = transaction {
-                    if (rewrite) {
-                        File("backup").mkdirs()
-                        File("backup/users_${LocalDateTime.now()}.tsv")
-                            .writeText(Users.selectAll().joinToString("\n") { row ->
-                                listOf(
-                                    row[Users.name], row[Users.login], row[Users.password],
-                                    row[Users.roleId], row[Users.phone].orEmpty(), row[Users.tgChatId] ?: ""
-                                ).joinToString("\t")
-                            })
-                        UserDepartments.deleteAll()
-                        Users.deleteAll()
-                    }
-
-                    file.readLines().count { importUserLine(it) }
-                }
-
-                call.respond(HttpStatusCode.Created, mapOf("imported" to imported))
+                call.respond(
+                    HttpStatusCode.Created,
+                    mapOf("imported" to UserService.importFrom(file, rewrite)),
+                )
             }
         }
         route("/{id}") {
             get {
-                val id = call.parameters["id"]!!.toInt()
-                val user = transaction { loadUsers(listOf(id), call.wantsDepartments())[id] }
-                    ?: return@get call.respond(HttpStatusCode.NotFound)
-
-                call.respond(user)
+                call.respond(UserService.byId(call.parameters["id"]!!.toInt(), call.wantsDepartments()))
             }
             put {
                 val id = call.parameters["id"]!!.toInt()
                 val principal = call.principal<UserPrincipal>()!!
-                if (principal.role != Role.ADMIN && principal.id != id) {
-                    return@put call.respond(HttpStatusCode.Forbidden)
-                }
-
-                val body = call.receive<UserDTO>()
                 val isAdmin = principal.role == Role.ADMIN
+                if (!isAdmin && principal.id != id) return@put call.respond(HttpStatusCode.Forbidden)
 
-                val updated = transaction {
-                    val rows = Users.update({ Users.id eq id }) {
-                        it[name] = body.name
-                        it[login] = body.login
-                        it[password] = hashPassword(body.password)
-                        it[phone] = body.phone
-                        it[tgChatId] = body.tgChatId
-                        if (isAdmin) it[roleId] = body.roleId
-                    }
-                    if (rows > 0 && isAdmin) setDepartments(id, body.departmentIds)
-                    rows
-                }
-
-                if (updated == 0) return@put call.respond(HttpStatusCode.NotFound)
-                call.respond(transaction { loadUsers(listOf(id), true).getValue(id) })
+                call.respond(UserService.update(id, call.receive<UserDTO>(), isAdmin))
             }
             delete {
                 if (call.principal<UserPrincipal>()!!.role != Role.ADMIN) {
                     return@delete call.respond(HttpStatusCode.Forbidden)
                 }
-                val id = call.parameters["id"]!!.toInt()
 
-                val deleted = transaction {
-                    UserDepartments.deleteWhere { userId eq id }
-                    Users.deleteWhere { Users.id eq id }
-                }
-
-                if (deleted == 0) return@delete call.respond(HttpStatusCode.NotFound)
+                UserService.delete(call.parameters["id"]!!.toInt())
                 call.respond(HttpStatusCode.NoContent)
             }
             userDepartmentsRoute()
@@ -160,45 +82,6 @@ fun Route.userRoute() {
 
         refRoutes("/roles", Roles)
     }
-}
-
-private fun setDepartments(userId: Int, departmentIds: List<Int>) {
-    UserDepartments.deleteWhere { UserDepartments.userId eq userId }
-    UserDepartments.batchInsert(departmentIds) { departmentId ->
-        this[UserDepartments.userId] = userId
-        this[UserDepartments.departmentId] = departmentId
-    }
-}
-
-/** Tab-separated: name, login, password, roleId, (unused), phone, tgChatId. */
-private fun importUserLine(line: String): Boolean {
-    val cells = line.split('\t')
-    if (cells.size < 7) return false
-
-    val login = cells[1]
-    val chatId = cells[6].toLongOrNull()
-    val role = cells[3].toIntOrNull() ?: return false
-
-    val existing = Users.select(Users.id).where { Users.login eq login }.singleOrNull()
-    if (existing == null) {
-        Users.insert {
-            it[name] = cells[0]
-            it[Users.login] = login
-            it[password] = hashIfPlaintext(cells[2])
-            it[roleId] = role
-            it[phone] = cells[5]
-            it[tgChatId] = chatId
-        }
-    } else {
-        Users.update({ Users.login eq login }) {
-            it[name] = cells[0]
-            it[password] = hashIfPlaintext(cells[2])
-            it[roleId] = role
-            it[phone] = cells[5]
-            it[tgChatId] = chatId
-        }
-    }
-    return true
 }
 
 private suspend fun RoutingContext.receiveUpload(): File? {
@@ -220,32 +103,14 @@ private suspend fun RoutingContext.receiveUpload(): File? {
 fun Route.userDepartmentsRoute() {
     route("/departments") {
         get {
-            val userId = call.parameters["id"]!!.toInt()
-            call.respond(transaction { departmentsByUser(listOf(userId))[userId].orEmpty() })
+            call.respond(UserService.departmentsOf(call.parameters["id"]!!.toInt()))
         }
         post {
-            val userId = call.parameters["id"]!!.toInt()
-            val departmentIds = call.receive<List<Int>>()
-
-            transaction {
-                UserDepartments.batchInsert(departmentIds, ignore = true) { departmentId ->
-                    this[UserDepartments.userId] = userId
-                    this[UserDepartments.departmentId] = departmentId
-                }
-            }
-
+            UserService.addDepartments(call.parameters["id"]!!.toInt(), call.receive<List<Int>>())
             call.respond(HttpStatusCode.Created)
         }
         delete {
-            val userId = call.parameters["id"]!!.toInt()
-            val departmentIds = call.receive<List<Int>>()
-
-            transaction {
-                UserDepartments.deleteWhere {
-                    (UserDepartments.userId eq userId) and (departmentId inList departmentIds)
-                }
-            }
-
+            UserService.removeDepartments(call.parameters["id"]!!.toInt(), call.receive<List<Int>>())
             call.respond(HttpStatusCode.NoContent)
         }
     }

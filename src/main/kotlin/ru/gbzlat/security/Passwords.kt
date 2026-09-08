@@ -1,4 +1,4 @@
-package ru.gbzlat.authentication
+package ru.gbzlat.security
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 

@@ -1,4 +1,4 @@
-package ru.gbzlat.authentication
+package ru.gbzlat.security
 
 enum class Role(val id: Int) {
     EMPLOYEE(1),

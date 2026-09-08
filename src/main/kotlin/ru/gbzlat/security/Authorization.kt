@@ -1,4 +1,4 @@
-package ru.gbzlat.authentication
+package ru.gbzlat.security
 
 import io.ktor.http.*
 import io.ktor.server.application.*

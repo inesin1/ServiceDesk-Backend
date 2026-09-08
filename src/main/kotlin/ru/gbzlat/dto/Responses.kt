@@ -39,3 +39,8 @@ data class TicketCommentResponse(
     val text: String,
     val createdAt: LocalDateTime,
 )
+
+data class Page<T>(
+    val items: List<T>,
+    val total: Long,
+)
