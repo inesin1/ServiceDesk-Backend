@@ -15,6 +15,7 @@ fun Application.module() {
     val config = AppConfig(environment.config)
 
     connectDatabase(config.database)
+    configureOpenApi()
     configureStatusPages()
     configureCors(config.corsAllowedHosts)
     configureAuthentication(config.jwt)

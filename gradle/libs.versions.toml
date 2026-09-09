@@ -9,6 +9,8 @@ hikari = "7.1.0"
 flyway = "13.5.0"
 bcrypt = "0.10.2"
 telegram = "6.1.0"
+openapi = "5.7.0"
+schemakenerator = "2.7.2"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
@@ -32,6 +34,11 @@ postgresql = { module = "org.postgresql:postgresql", version.ref = "postgres" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+
+ktor-openapi = { module = "io.github.smiley4:ktor-openapi", version.ref = "openapi" }
+ktor-swagger-ui = { module = "io.github.smiley4:ktor-swagger-ui", version.ref = "openapi" }
+schema-kenerator-core = { module = "io.github.smiley4:schema-kenerator-core", version.ref = "schemakenerator" }
+schema-kenerator-swagger = { module = "io.github.smiley4:schema-kenerator-swagger", version.ref = "schemakenerator" }
 
 bcrypt = { module = "at.favre.lib:bcrypt", version.ref = "bcrypt" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }

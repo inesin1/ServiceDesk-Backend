@@ -24,12 +24,12 @@ private val RoleAuthorization = createRouteScopedPlugin("RoleAuthorization", ::R
 
 /** Restricts everything built inside to the given roles. */
 fun Route.requireRole(vararg roles: Role, build: Route.() -> Unit) {
-    val child = createChild(TransparentRouteSelector)
+    val child = createChild(RoleRouteSelector)
     child.install(RoleAuthorization) { allowed = roles.toSet() }
     child.build()
 }
 
-private object TransparentRouteSelector : RouteSelector() {
+object RoleRouteSelector : RouteSelector() {
     override suspend fun evaluate(context: RoutingResolveContext, segmentIndex: Int) =
         RouteSelectorEvaluation.Transparent
 

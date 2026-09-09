@@ -52,6 +52,12 @@ dependencies {
     runtimeOnly(libs.flyway.postgresql)
     runtimeOnly(libs.postgresql)
 
+    // openapi
+    implementation(libs.ktor.openapi)
+    implementation(libs.ktor.swagger.ui)
+    implementation(libs.schema.kenerator.core)
+    implementation(libs.schema.kenerator.swagger)
+
     // telegram
     implementation(libs.telegram.bot)
 
