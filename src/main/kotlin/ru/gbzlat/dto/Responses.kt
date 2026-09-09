@@ -1,7 +1,5 @@
 package ru.gbzlat.dto
 
-import java.time.LocalDateTime
-
 data class Ref(
     val id: Int,
     val name: String,
@@ -27,9 +25,9 @@ data class TicketResponse(
     val source: Ref,
     val category: Ref,
     val status: Ref,
-    val createdAt: LocalDateTime,
-    val closedAt: LocalDateTime?,
-    val timeLimit: LocalDateTime,
+    val createdAt: String,
+    val closedAt: String?,
+    val timeLimit: String,
 )
 
 data class TicketCommentResponse(
@@ -37,10 +35,23 @@ data class TicketCommentResponse(
     val ticketId: Int,
     val creator: UserResponse,
     val text: String,
-    val createdAt: LocalDateTime,
+    val createdAt: String,
 )
 
 data class Page<T>(
     val items: List<T>,
     val total: Long,
+)
+
+data class ErrorResponse(
+    val status: Int,
+    val message: String,
+)
+
+data class LoginAvailability(
+    val available: Boolean,
+)
+
+data class ImportResult(
+    val imported: Int,
 )

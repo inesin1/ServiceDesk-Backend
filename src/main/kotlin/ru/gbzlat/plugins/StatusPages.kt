@@ -7,7 +7,7 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import ru.gbzlat.error.ApiException
-import ru.gbzlat.error.ErrorResponse
+import ru.gbzlat.dto.ErrorResponse
 
 fun Application.configureStatusPages() {
     install(StatusPages) {

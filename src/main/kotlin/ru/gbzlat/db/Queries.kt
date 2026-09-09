@@ -60,9 +60,9 @@ fun toTicketResponses(rows: List<ResultRow>): List<TicketResponse> {
             source = Ref(row[TicketSources.id], row[TicketSources.name]),
             category = Ref(row[TicketCategories.id], row[TicketCategories.name]),
             status = Ref(row[Statuses.id], row[Statuses.name]),
-            createdAt = row[Tickets.createdAt],
-            closedAt = row[Tickets.closedAt],
-            timeLimit = row[Tickets.timeLimit],
+            createdAt = row[Tickets.createdAt].toString(),
+            closedAt = row[Tickets.closedAt]?.toString(),
+            timeLimit = row[Tickets.timeLimit].toString(),
         )
     }
 }
@@ -82,7 +82,7 @@ fun toCommentResponses(rows: List<ResultRow>): List<TicketCommentResponse> {
             ticketId = row[TicketComments.ticketId],
             creator = users.getValue(row[TicketComments.creatorId]),
             text = row[TicketComments.text],
-            createdAt = row[TicketComments.createdAt],
+            createdAt = row[TicketComments.createdAt].toString(),
         )
     }
 }
