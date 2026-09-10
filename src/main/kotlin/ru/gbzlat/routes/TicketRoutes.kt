@@ -76,7 +76,6 @@ fun Route.ticketRoute() {
             request { body<TicketDTO>() }
             response {
                 code(HttpStatusCode.Created) {
-                    description = "Создано"
                     description = "Заявка создана"
                 }
                 code(HttpStatusCode.Conflict) {
@@ -125,7 +124,6 @@ fun Route.ticketRoute() {
                     }
                     response {
                         code(HttpStatusCode.NoContent) {
-                            description = "Выполнено"
                             description = "Исполнитель назначен"
                         }
                         code(HttpStatusCode.NotFound) {
@@ -147,7 +145,6 @@ fun Route.ticketRoute() {
                     request { pathParameter<Int>("id") }
                     response {
                         code(HttpStatusCode.NoContent) {
-                            description = "Выполнено"
                             description = "Заявка закрыта"
                         }
                         code(HttpStatusCode.NotFound) {
@@ -197,7 +194,6 @@ fun Route.ticketCommentRoute() {
             }
             response {
                 code(HttpStatusCode.Created) {
-                    description = "Создано"
                     description = "Комментарий добавлен"
                 }
             }

@@ -76,7 +76,6 @@ fun Route.refRoutes(path: String, table: RefTable, tag: String, one: String, man
                         body<Ref>()
                     }
                     code(HttpStatusCode.Forbidden) {
-                        description = "Недостаточно прав"
                         description = "Только для администратора"
                     }
                 }
@@ -107,7 +106,6 @@ fun Route.refRoutes(path: String, table: RefTable, tag: String, one: String, man
                         body<ErrorResponse>()
                     }
                     code(HttpStatusCode.Forbidden) {
-                        description = "Недостаточно прав"
                         description = "Только для администратора"
                     }
                 }
@@ -126,7 +124,6 @@ fun Route.refRoutes(path: String, table: RefTable, tag: String, one: String, man
                 request { pathParameter<Int>("id") }
                 response {
                     code(HttpStatusCode.NoContent) {
-                        description = "Выполнено"
                         description = "Запись удалена"
                     }
                     code(HttpStatusCode.NotFound) {
@@ -134,7 +131,6 @@ fun Route.refRoutes(path: String, table: RefTable, tag: String, one: String, man
                         body<ErrorResponse>()
                     }
                     code(HttpStatusCode.Forbidden) {
-                        description = "Недостаточно прав"
                         description = "Только для администратора"
                     }
                 }
