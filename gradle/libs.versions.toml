@@ -11,6 +11,8 @@ bcrypt = "0.10.2"
 telegram = "6.1.0"
 openapi = "5.7.0"
 schemakenerator = "2.7.2"
+testcontainers = "1.21.4"
+junit = "6.1.3"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
@@ -43,6 +45,9 @@ schema-kenerator-swagger = { module = "io.github.smiley4:schema-kenerator-swagge
 bcrypt = { module = "at.favre.lib:bcrypt", version.ref = "bcrypt" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 telegram-bot = { module = "io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram", version.ref = "telegram" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 [plugins]
