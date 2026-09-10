@@ -107,7 +107,6 @@ fun Route.userRoute() {
                         body<UserResponse>()
                     }
                     code(HttpStatusCode.Forbidden) {
-                        description = "Недостаточно прав"
                         description = "Только для администратора"
                     }
                 }
@@ -180,7 +179,6 @@ fun Route.userRoute() {
                         body<UserResponse>()
                     }
                     code(HttpStatusCode.Forbidden) {
-                        description = "Недостаточно прав"
                         description = "Чужой профиль"
                     }
                     code(HttpStatusCode.NotFound) {
@@ -203,11 +201,9 @@ fun Route.userRoute() {
                 request { pathParameter<Int>("id") }
                 response {
                     code(HttpStatusCode.NoContent) {
-                        description = "Выполнено"
                         description = "Пользователь удалён"
                     }
                     code(HttpStatusCode.Forbidden) {
-                        description = "Недостаточно прав"
                         description = "Только для администратора"
                     }
                     code(HttpStatusCode.NotFound) {
@@ -272,7 +268,6 @@ fun Route.userDepartmentsRoute() {
             }
             response {
                 code(HttpStatusCode.Created) {
-                    description = "Создано"
                     description = "Отделения добавлены"
                 }
             }
@@ -290,7 +285,6 @@ fun Route.userDepartmentsRoute() {
             }
             response {
                 code(HttpStatusCode.NoContent) {
-                    description = "Выполнено"
                     description = "Отделения убраны"
                 }
             }
