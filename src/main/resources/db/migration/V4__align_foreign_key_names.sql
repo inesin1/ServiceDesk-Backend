@@ -1,0 +1,21 @@
+-- V1 let Postgres name the foreign keys; Exposed expects its own convention.
+ALTER TABLE users DROP CONSTRAINT users_role_id_fkey;
+ALTER TABLE users ADD CONSTRAINT fk_users_role_id__id FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE user_departments DROP CONSTRAINT user_departments_user_id_fkey;
+ALTER TABLE user_departments ADD CONSTRAINT fk_user_departments_user_id__id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE user_departments DROP CONSTRAINT user_departments_department_id_fkey;
+ALTER TABLE user_departments ADD CONSTRAINT fk_user_departments_department_id__id FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE tickets DROP CONSTRAINT tickets_creator_id_fkey;
+ALTER TABLE tickets ADD CONSTRAINT fk_tickets_creator_id__id FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE tickets DROP CONSTRAINT tickets_executor_id_fkey;
+ALTER TABLE tickets ADD CONSTRAINT fk_tickets_executor_id__id FOREIGN KEY (executor_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE tickets DROP CONSTRAINT tickets_source_id_fkey;
+ALTER TABLE tickets ADD CONSTRAINT fk_tickets_source_id__id FOREIGN KEY (source_id) REFERENCES ticket_sources(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE tickets DROP CONSTRAINT tickets_category_id_fkey;
+ALTER TABLE tickets ADD CONSTRAINT fk_tickets_category_id__id FOREIGN KEY (category_id) REFERENCES ticket_categories(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE tickets DROP CONSTRAINT tickets_status_id_fkey;
+ALTER TABLE tickets ADD CONSTRAINT fk_tickets_status_id__id FOREIGN KEY (status_id) REFERENCES statuses(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE ticket_comments DROP CONSTRAINT ticket_comments_ticket_id_fkey;
+ALTER TABLE ticket_comments ADD CONSTRAINT fk_ticket_comments_ticket_id__id FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE ticket_comments DROP CONSTRAINT ticket_comments_creator_id_fkey;
+ALTER TABLE ticket_comments ADD CONSTRAINT fk_ticket_comments_creator_id__id FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
