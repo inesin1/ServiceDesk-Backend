@@ -5,6 +5,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import ru.gbzlat.dto.ErrorResponse
 import ru.gbzlat.dto.Page
+import ru.gbzlat.dto.TicketCommentResponse
 import ru.gbzlat.dto.TicketResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -88,6 +89,25 @@ class TicketApiTest {
         assertEquals(HttpStatusCode.NotFound, ticket.status)
         assertEquals(HttpStatusCode.NotFound, comments.status)
         assertEquals(HttpStatusCode.NotFound, comment.status)
+    }
+
+    @Test
+    fun `пишет системные комментарии от того, кто назначает и закрывает`() = withApp { client ->
+        val admin = client.adminToken()
+        val (owner, ownerToken) = client.createUserAndLogin("emp-system", 1)
+        val (specialist, specialistToken) = client.createUserAndLogin("spec-system", 2)
+        client.createTicket(admin, owner.id)
+        val ticketId: Int = client.get<Page<TicketResponse>>("/api/tickets", ownerToken).items.first().id
+
+        client.put("/api/tickets/$ticketId/work/${specialist.id}") { auth(specialistToken) }
+        client.put("/api/tickets/$ticketId/close") { auth(specialistToken) }
+        val comments: List<TicketCommentResponse> = client.get("/api/tickets/$ticketId/comments", ownerToken)
+
+        assertEquals(
+            listOf("Назначен исполнитель: Тест spec-system", "Статус заявки изменён на: Закрыта"),
+            comments.map { it.text },
+        )
+        assertTrue(comments.all { it.creator.id == specialist.id })
     }
 
     @Test
