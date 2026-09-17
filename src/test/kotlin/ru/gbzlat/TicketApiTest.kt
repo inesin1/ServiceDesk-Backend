@@ -73,6 +73,24 @@ class TicketApiTest {
     }
 
     @Test
+    fun `отвечает 404 сотруднику на чужую заявку и её комментарии`() = withApp { client ->
+        val admin = client.adminToken()
+        val (owner, ownerToken) = client.createUserAndLogin("emp-owner", 1)
+        val (_, strangerToken) = client.createUserAndLogin("emp-stranger", 1)
+        client.createTicket(admin, owner.id)
+        val ticketId: Int = client.get<Page<TicketResponse>>("/api/tickets", ownerToken).items.first().id
+
+        val ticket = client.get("/api/tickets/$ticketId") { auth(strangerToken) }
+        val comments = client.get("/api/tickets/$ticketId/comments") { auth(strangerToken) }
+        val comment = client.post("/api/tickets/$ticketId/comments") { auth(strangerToken); json(mapOf("text" to "x")) }
+
+        assertEquals(HttpStatusCode.OK, client.get("/api/tickets/$ticketId") { auth(ownerToken) }.status)
+        assertEquals(HttpStatusCode.NotFound, ticket.status)
+        assertEquals(HttpStatusCode.NotFound, comments.status)
+        assertEquals(HttpStatusCode.NotFound, comment.status)
+    }
+
+    @Test
     fun `отвечает 400 на нечисловой id`() = withApp { client ->
         val token = client.adminToken()
 
