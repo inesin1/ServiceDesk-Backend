@@ -97,6 +97,7 @@ fun Route.ticketRoute() {
             get({
                 operationId = "getTicket"
                 summary = "Заявка по id"
+                description = "Чужая заявка для сотрудника — 404."
                 tags = listOf("Заявки")
                 request { pathParameter<Int>("id") }
                 response {
@@ -110,7 +111,8 @@ fun Route.ticketRoute() {
                     }
                 }
             }) {
-                call.respond(TicketService.byId(call.parameters["id"]!!.toInt()))
+                val principal = call.principal<UserPrincipal>()!!
+                call.respond(TicketService.byId(call.parameters["id"]!!.toInt(), principal.id, principal.role))
             }
             requireRole(Role.SPECIALIST, Role.ADMIN) {
                 put("/work/{executorId}", {
@@ -172,6 +174,7 @@ fun Route.ticketCommentRoute() {
         get({
             operationId = "listTicketComments"
             summary = "Комментарии к заявке"
+            description = "Чужая заявка для сотрудника — 404."
             tags = listOf("Комментарии")
             request { pathParameter<Int>("id") }
             response {
@@ -179,14 +182,19 @@ fun Route.ticketCommentRoute() {
                     description = "Успешно"
                     body<List<TicketCommentResponse>>()
                 }
+                code(HttpStatusCode.NotFound) {
+                    description = "Не найдено"
+                    body<ErrorResponse>()
+                }
             }
         }) {
-            call.respond(TicketService.comments(call.parameters["id"]!!.toInt()))
+            val principal = call.principal<UserPrincipal>()!!
+            call.respond(TicketService.comments(call.parameters["id"]!!.toInt(), principal.id, principal.role))
         }
         post({
             operationId = "addTicketComment"
             summary = "Добавить комментарий"
-            description = "Автор берётся из токена."
+            description = "Автор берётся из токена. Чужая заявка для сотрудника — 404."
             tags = listOf("Комментарии")
             request {
                 pathParameter<Int>("id")
@@ -196,12 +204,18 @@ fun Route.ticketCommentRoute() {
                 code(HttpStatusCode.Created) {
                     description = "Комментарий добавлен"
                 }
+                code(HttpStatusCode.NotFound) {
+                    description = "Не найдено"
+                    body<ErrorResponse>()
+                }
             }
         }) {
             val body = call.receive<TicketCommentDTO>()
+            val principal = call.principal<UserPrincipal>()!!
             TicketService.addComment(
                 ticketId = call.parameters["id"]!!.toInt(),
-                authorId = call.principal<UserPrincipal>()!!.id,
+                authorId = principal.id,
+                role = principal.role,
                 text = body.text,
             )
             call.respond(HttpStatusCode.Created)

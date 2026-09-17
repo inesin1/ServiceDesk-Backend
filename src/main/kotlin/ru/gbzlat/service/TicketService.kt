@@ -44,8 +44,10 @@ object TicketService {
             Page(toTicketResponses(rows), Tickets.selectAll().where(where).count())
         }
 
-    fun byId(id: Int): TicketResponse = transaction {
-        toTicketResponses(ticketsWithRefs().selectAll().where { Tickets.id eq id }.toList())
+    fun byId(id: Int, userId: Int, role: Role): TicketResponse = transaction {
+        toTicketResponses(
+            ticketsWithRefs().selectAll().where { (Tickets.id eq id) and visibleTo(userId, role) }.toList()
+        )
     }.singleOrNull() ?: notFound("Заявка №$id не найдена")
 
     /** Returns the creator's name for the notification that follows. */
@@ -77,7 +79,8 @@ object TicketService {
         }
     }.also { if (it == 0) notFound("Заявка №$ticketId не найдена") }
 
-    fun comments(ticketId: Int): List<TicketCommentResponse> = transaction {
+    fun comments(ticketId: Int, userId: Int, role: Role): List<TicketCommentResponse> = transaction {
+        requireVisible(ticketId, userId, role)
         toCommentResponses(
             TicketComments.selectAll()
                 .where { TicketComments.ticketId eq ticketId }
@@ -86,7 +89,8 @@ object TicketService {
         )
     }
 
-    fun addComment(ticketId: Int, authorId: Int, text: String) = transaction {
+    fun addComment(ticketId: Int, authorId: Int, role: Role, text: String) = transaction {
+        requireVisible(ticketId, authorId, role)
         TicketComments.insert {
             it[TicketComments.ticketId] = ticketId
             it[creatorId] = authorId
@@ -101,9 +105,17 @@ object TicketService {
             .mapNotNull { it[Users.tgChatId] }
     }
 
+    private fun visibleTo(userId: Int, role: Role): Op<Boolean> =
+        if (role == Role.EMPLOYEE) Tickets.creatorId eq userId else Op.TRUE
+
+    private fun requireVisible(ticketId: Int, userId: Int, role: Role) {
+        if (Tickets.select(Tickets.id).where { (Tickets.id eq ticketId) and visibleTo(userId, role) }.empty()) {
+            notFound("Заявка №$ticketId не найдена")
+        }
+    }
+
     private fun buildWhere(userId: Int, role: Role, filter: TicketFilter): Op<Boolean> {
-        var where: Op<Boolean> = Op.TRUE
-        if (role == Role.EMPLOYEE) where = where and (Tickets.creatorId eq userId)
+        var where = visibleTo(userId, role)
 
         filter.statuses?.let { where = where and (Tickets.statusId inList it) }
         filter.categories?.let { where = where and (Tickets.categoryId inList it) }
