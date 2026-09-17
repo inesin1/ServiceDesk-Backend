@@ -65,19 +65,26 @@ object TicketService {
         Users.select(Users.name).where { Users.id eq creatorId }.single()[Users.name]
     }
 
-    fun assignExecutor(ticketId: Int, executorId: Int) = transaction {
-        Tickets.update({ Tickets.id eq ticketId }) {
+    fun assignExecutor(ticketId: Int, executorId: Int, actorId: Int) = transaction {
+        val rows = Tickets.update({ Tickets.id eq ticketId }) {
             it[Tickets.executorId] = executorId
             it[statusId] = STATUS_IN_WORK
         }
-    }.also { if (it == 0) notFound("Заявка №$ticketId не найдена") }
+        if (rows == 0) notFound("Заявка №$ticketId не найдена")
 
-    fun close(ticketId: Int) = transaction {
-        Tickets.update({ Tickets.id eq ticketId }) {
+        val executorName = Users.select(Users.name).where { Users.id eq executorId }.single()[Users.name]
+        insertComment(ticketId, actorId, "Назначен исполнитель: $executorName")
+    }
+
+    fun close(ticketId: Int, actorId: Int) = transaction {
+        val rows = Tickets.update({ Tickets.id eq ticketId }) {
             it[statusId] = STATUS_CLOSED
             it[closedAt] = LocalDateTime.now(zone)
         }
-    }.also { if (it == 0) notFound("Заявка №$ticketId не найдена") }
+        if (rows == 0) notFound("Заявка №$ticketId не найдена")
+
+        insertComment(ticketId, actorId, "Статус заявки изменён на: ${Statuses.findRef(STATUS_CLOSED)!!.name}")
+    }
 
     fun comments(ticketId: Int, userId: Int, role: Role): List<TicketCommentResponse> = transaction {
         requireVisible(ticketId, userId, role)
@@ -91,18 +98,22 @@ object TicketService {
 
     fun addComment(ticketId: Int, authorId: Int, role: Role, text: String) = transaction {
         requireVisible(ticketId, authorId, role)
-        TicketComments.insert {
-            it[TicketComments.ticketId] = ticketId
-            it[creatorId] = authorId
-            it[TicketComments.text] = text
-            it[createdAt] = LocalDateTime.now(zone)
-        }
+        insertComment(ticketId, authorId, text)
     }
 
     fun specialistChatIds(): List<Long> = transaction {
         Users.select(Users.tgChatId)
             .where { (Users.roleId neq Role.EMPLOYEE.id) and Users.tgChatId.isNotNull() }
             .mapNotNull { it[Users.tgChatId] }
+    }
+
+    private fun insertComment(ticketId: Int, authorId: Int, text: String) {
+        TicketComments.insert {
+            it[TicketComments.ticketId] = ticketId
+            it[creatorId] = authorId
+            it[TicketComments.text] = text
+            it[createdAt] = LocalDateTime.now(zone)
+        }
     }
 
     private fun visibleTo(userId: Int, role: Role): Op<Boolean> =

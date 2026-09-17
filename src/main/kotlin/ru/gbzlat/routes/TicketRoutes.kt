@@ -118,7 +118,7 @@ fun Route.ticketRoute() {
                 put("/work/{executorId}", {
                     operationId = "assignTicketExecutor"
                     summary = "Назначить исполнителя"
-                    description = "Переводит заявку в статус «В работе»."
+                    description = "Переводит заявку в статус «В работе» и пишет системный комментарий."
                     tags = listOf("Заявки")
                     request {
                         pathParameter<Int>("id")
@@ -137,12 +137,14 @@ fun Route.ticketRoute() {
                     TicketService.assignExecutor(
                         call.parameters["id"]!!.toInt(),
                         call.parameters["executorId"]!!.toInt(),
+                        call.principal<UserPrincipal>()!!.id,
                     )
                     call.respond(HttpStatusCode.NoContent)
                 }
                 put("/close", {
                     operationId = "closeTicket"
                     summary = "Закрыть заявку"
+                    description = "Пишет системный комментарий."
                     tags = listOf("Заявки")
                     request { pathParameter<Int>("id") }
                     response {
@@ -155,7 +157,7 @@ fun Route.ticketRoute() {
                         }
                     }
                 }) {
-                    TicketService.close(call.parameters["id"]!!.toInt())
+                    TicketService.close(call.parameters["id"]!!.toInt(), call.principal<UserPrincipal>()!!.id)
                     call.respond(HttpStatusCode.NoContent)
                 }
             }
