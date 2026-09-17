@@ -106,6 +106,10 @@ fun Route.userRoute() {
                         description = "Создано"
                         body<UserResponse>()
                     }
+                    code(HttpStatusCode.BadRequest) {
+                        description = "Не указан пароль"
+                        body<ErrorResponse>()
+                    }
                     code(HttpStatusCode.Forbidden) {
                         description = "Только для администратора"
                     }
@@ -167,7 +171,8 @@ fun Route.userRoute() {
             put({
                 operationId = "updateUser"
                 summary = "Изменить пользователя"
-                description = "Своё — сам, чужое — только администратор. Роль и отделения меняет только администратор."
+                description = "Своё — сам, чужое — только администратор. Роль и отделения меняет только администратор. " +
+                    "Без password пароль не меняется."
                 tags = listOf("Пользователи")
                 request {
                     pathParameter<Int>("id")
@@ -177,6 +182,10 @@ fun Route.userRoute() {
                     code(HttpStatusCode.OK) {
                         description = "Успешно"
                         body<UserResponse>()
+                    }
+                    code(HttpStatusCode.BadRequest) {
+                        description = "Пустой пароль"
+                        body<ErrorResponse>()
                     }
                     code(HttpStatusCode.Forbidden) {
                         description = "Чужой профиль"

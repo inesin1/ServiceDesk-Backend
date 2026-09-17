@@ -8,6 +8,7 @@ import ru.gbzlat.dto.Page
 import ru.gbzlat.dto.Ref
 import ru.gbzlat.dto.UserDTO
 import ru.gbzlat.dto.UserResponse
+import ru.gbzlat.error.badRequest
 import ru.gbzlat.error.notFound
 import ru.gbzlat.security.Role
 import ru.gbzlat.security.hashIfPlaintext
@@ -36,10 +37,13 @@ object UserService {
         transaction { Users.selectAll().where { Users.login eq login }.any() }
 
     fun create(data: UserDTO): UserResponse = transaction {
+        val password = data.password ?: badRequest("Не указан пароль")
+        if (password.isBlank()) badRequest("Пароль не может быть пустым")
+
         val id = Users.insert {
             it[name] = data.name
             it[login] = data.login
-            it[password] = hashPassword(data.password)
+            it[Users.password] = hashPassword(password)
             it[roleId] = data.roleId
             it[phone] = data.phone
             it[tgChatId] = data.tgChatId
@@ -51,10 +55,12 @@ object UserService {
 
     /** Only an admin may change a role or departments; the account holder edits the rest. */
     fun update(id: Int, data: UserDTO, asAdmin: Boolean): UserResponse = transaction {
+        if (data.password?.isBlank() == true) badRequest("Пароль не может быть пустым")
+
         val rows = Users.update({ Users.id eq id }) {
             it[name] = data.name
             it[login] = data.login
-            it[password] = hashPassword(data.password)
+            data.password?.let { password -> it[Users.password] = hashPassword(password) }
             it[phone] = data.phone
             it[tgChatId] = data.tgChatId
             if (asAdmin) it[roleId] = data.roleId
