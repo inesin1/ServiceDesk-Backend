@@ -30,7 +30,7 @@ fun HttpRequestBuilder.json(body: Any) {
 fun newUser(
     login: String,
     roleId: Int,
-    password: String = "secret",
+    password: String? = "secret",
     departmentIds: List<Int> = listOf(1),
 ) = UserDTO(
     name = "Тест $login",
