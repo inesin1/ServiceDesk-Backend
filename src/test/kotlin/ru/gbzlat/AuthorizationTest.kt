@@ -55,6 +55,17 @@ class AuthorizationTest {
     }
 
     @Test
+    fun `возвращает 403 сотруднику на правке отделений`() = withApp { client ->
+        val (user, token) = client.createUserAndLogin("emp-departments", 1)
+
+        val added = client.post("/api/users/${user.id}/departments") { auth(token); json(listOf(2, 3)) }
+        val removed = client.delete("/api/users/1/departments") { auth(token); json(listOf(5)) }
+
+        assertEquals(HttpStatusCode.Forbidden, added.status)
+        assertEquals(HttpStatusCode.Forbidden, removed.status)
+    }
+
+    @Test
     fun `возвращает 403 на правку чужого профиля`() = withApp { client ->
         val (_, token) = client.createUserAndLogin("emp-other", 1)
 
