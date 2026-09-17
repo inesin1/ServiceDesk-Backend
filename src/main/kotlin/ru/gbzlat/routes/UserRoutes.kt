@@ -267,39 +267,47 @@ fun Route.userDepartmentsRoute() {
         }) {
             call.respond(UserService.departmentsOf(call.parameters["id"]!!.toInt()))
         }
-        post({
-            operationId = "addUserDepartments"
-            summary = "Добавить отделения"
-            tags = listOf("Пользователи")
-            request {
-                pathParameter<Int>("id")
-                body<List<Int>>()
-            }
-            response {
-                code(HttpStatusCode.Created) {
-                    description = "Отделения добавлены"
+        requireRole(Role.ADMIN) {
+            post({
+                operationId = "addUserDepartments"
+                summary = "Добавить отделения"
+                tags = listOf("Пользователи")
+                request {
+                    pathParameter<Int>("id")
+                    body<List<Int>>()
                 }
-            }
-        }) {
-            UserService.addDepartments(call.parameters["id"]!!.toInt(), call.receive<List<Int>>())
-            call.respond(HttpStatusCode.Created)
-        }
-        delete({
-            operationId = "removeUserDepartments"
-            summary = "Убрать отделения"
-            tags = listOf("Пользователи")
-            request {
-                pathParameter<Int>("id")
-                body<List<Int>>()
-            }
-            response {
-                code(HttpStatusCode.NoContent) {
-                    description = "Отделения убраны"
+                response {
+                    code(HttpStatusCode.Created) {
+                        description = "Отделения добавлены"
+                    }
+                    code(HttpStatusCode.Forbidden) {
+                        description = "Только для администратора"
+                    }
                 }
+            }) {
+                UserService.addDepartments(call.parameters["id"]!!.toInt(), call.receive<List<Int>>())
+                call.respond(HttpStatusCode.Created)
             }
-        }) {
-            UserService.removeDepartments(call.parameters["id"]!!.toInt(), call.receive<List<Int>>())
-            call.respond(HttpStatusCode.NoContent)
+            delete({
+                operationId = "removeUserDepartments"
+                summary = "Убрать отделения"
+                tags = listOf("Пользователи")
+                request {
+                    pathParameter<Int>("id")
+                    body<List<Int>>()
+                }
+                response {
+                    code(HttpStatusCode.NoContent) {
+                        description = "Отделения убраны"
+                    }
+                    code(HttpStatusCode.Forbidden) {
+                        description = "Только для администратора"
+                    }
+                }
+            }) {
+                UserService.removeDepartments(call.parameters["id"]!!.toInt(), call.receive<List<Int>>())
+                call.respond(HttpStatusCode.NoContent)
+            }
         }
     }
 }
